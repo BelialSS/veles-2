@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Студия Волос Велеся | Каталог</title>
+    
+<link rel="stylesheet" href="styles.css">
+    
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+    <header class="header">
+        <h1>Студия Волос Велеся</h1>
+        <p class="subtitle">Искусство создания образа</p>
+    </header>
+
+    <main class="container">
+        
+<aside class="filter-section">
+            <h3>🔍 Фильтры</h3>
+            
+            
+<div class="filter-group">
+                <label>📏 Длина: <span id="lengthValue">14-30 см</span></label>
+                <div class="range-slider">
+                    <input type="range" id="lengthMin" min="14" max="30" value="14" class="slider">
+                    <input type="range" id="lengthMax" min="14" max="30" value="30" class="slider">
+                </div>
+                <div class="range-labels">
+                    <span>14 см</span>
+                    <span>30 см</span>
+                </div>
+            </div>
+            
+            
+<div class="filter-group">
+                <label>💰 Цена: <span id="priceValue">1000-10000 ₽</span></label>
+                <div class="range-slider">
+                    <input type="range" id="priceMin" min="1000" max="10000" value="1000" class="slider">
+                    <input type="range" id="priceMax" min="1000" max="10000" value="10000" class="slider">
+                </div>
+                <div class="range-labels">
+                    <span>1000 ₽</span>
+                    <span>10000 ₽</span>
+                </div>
+            </div>
+            
+            
+<div class="filter-group">
+                <label>🎨 Цвет:</label>
+                
+<select id="colorFilter" multiple class="multi-select">
+                    
+</select>
+                <small>Удерживайте Ctrl (Cmd) для выбора нескольких</small>
+            </div>
+
+            <button id="resetFilters" class="reset-button">
+                Сбросить фильтры
+            </button>
+        </aside>
+
+        
+<section id="productsContainer" class="products-container">
+            
+</section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2024 Студия Волос Велеся. Все права защищены.</p>
+    </footer>
+
+    
+<script src="app.js"></script> 
+</body>
+</html>
