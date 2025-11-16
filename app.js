@@ -1,8 +1,7 @@
 class HairShopCatalog {
     constructor() {
-        // ID Вашей Google Таблицы (из URL)
-        // https://docs.google.com/spreadsheets/d/15KZ6DHJD4zin2nATxLG-xBGx-BClYWUDAY_mW0VIwoM/edit
-        this.SHEET_ID = "15KZ6DHJD4zin2nATxLG-xBGx-BClYWUDAY_mW0VIwoM";
+        // !! ВОЗВРАЩАЕМСЯ К CORS-ПРОКСИ, НО С ВАШЕЙ ПРЯМОЙ ОПУБЛИКОВАННОЙ ССЫЛКОЙ
+        this.CSV_URL = "https://corsproxy.io/?https://docs.google.com/spreadsheets/d/e/2PACX-1vS800Y_zN10Ys9uQfkEB67ZqlWMobbZTAkIu4l4X-a2rp1e80jlrFfhQV1m18n5hHCBANXc7VjRhIo5/pub?output=csv";
         
         this.products = [];
         this.filterRanges = null; // Для хранения мин/макс значений
@@ -14,100 +13,93 @@ class HairShopCatalog {
             colors: []
         };
         
-        this.dataLoaded = false; // Флаг для отслеживания таймаута
-        
         this.init();
     }
 
-    init() {
+    async init() {
         this.renderLoading(); // Показываем заглушку
         
-        // 1. Определяем глобальную функцию, которую вызовет Google
-        // Мы привязываем 'this', чтобы внутри parseGoogleSheetJSON он указывал на наш класс
-        window.googleSheetCallback = this.parseGoogleSheetJSON.bind(this);
-        
-        // 2. Загружаем данные
-        this.loadProductsFromSheet();
+        // !! ВОЗВРАЩАЕМ СТАРУЮ ЛОГИКУ ЗАГРУЗКИ (fetch)
+        await this.loadProductsFromCSV();
     }
 
     /**
-     * Загружает данные с помощью JSONP, создавая тег <script>
+     * Загружает данные с помощью fetch и CORS-прокси
      */
-    loadProductsFromSheet() {
+    async loadProductsFromCSV() {
         try {
-            console.log('📥 Requesting data from Google Sheet using JSONP...');
-            const script = document.createElement('script');
+            console.log('📥 Загрузка из (CORS Proxy):', this.CSV_URL);
+            const response = await fetch(this.CSV_URL);
             
-            // Используем Google Visualization API (gviz) для получения JSONP
-            // 'tqx=out:jsonp:googleSheetCallback' - говорит Google обернуть JSON в функцию 'googleSheetCallback'
-            // 'gid=0' - указывает, что мы берем первую страницу (лист) таблицы
-            const sheetURL = `https://docs.google.com/spreadsheets/d/${this.SHEET_ID}/gviz/tq?tqx=out:jsonp:googleSheetCallback&gid=0`;
+            if (!response.ok) {
+                // Если прокси не сработал
+                throw new Error(`HTTP ошибка! Статус: ${response.status}. corsproxy.io мог отказать в доступе.`);
+            }
             
-            script.src = sheetURL;
+            const csvText = await response.text();
+            console.log('📄 CSV контент загружен.');
             
-            // Обработка ошибки, если скрипт не загрузился (например, ID таблицы неверный)
-            script.onerror = () => {
-                this.renderError("Ошибка загрузки данных Google. Проверьте ID таблицы и убедитесь, что она опубликована (Файл -> Поделиться -> Опубликовать в интернете).");
-            };
-            
-            document.body.appendChild(script);
+            this.products = this.parseCSV(csvText); // Вызываем наш УМНЫЙ парсер CSV
+            console.log('✅ Разобрано продуктов:', this.products.length);
 
-            // !! НОВОЕ: Добавляем таймаут на 10 секунд
-            setTimeout(() => {
-                if (!this.dataLoaded) { // Если флаг dataLoaded все еще false
-                    console.error('Timeout: Google Sheet data did not load after 10 seconds.');
-                    this.renderError("Ошибка: Время ожидания от Google Таблиц истекло. Убедитесь, что таблица опубликована (Файл -> Поделиться -> Опубликовать в интернете) и у вас есть соединение.");
-                }
-            }, 10000); // 10-секундный таймаут
+            if (this.products.length === 0) {
+                 this.renderError('Не удалось разобрать товары из CSV. Проверьте заголовки (id, price, length) и данные в таблице.');
+                 return;
+            }
 
+            // Настраиваем все остальное
+            this.determineFilterRanges();
+            this.updateRangeValues();
+            this.updateRangeSliders();
+            this.renderProducts(this.products);
+            this.setupEventListeners(); // Настраиваем обработчики
+            
         } catch (error) {
-            console.error('❌ Ошибка при создании script-тега:', error);
-            this.renderError(`Внутренняя ошибка JavaScript: ${error.message}`);
+            console.error('❌ Ошибка загрузки или парсинга CSV:', error);
+            this.renderError(`Не удалось загрузить данные каталога: ${error.message}.`);
         }
     }
 
     /**
-     * Эта функция НЕ вызывается нами, она вызывается Google после загрузки скрипта.
-     * @param {object} data - JSON-объект, возвращенный Google
+     * НОВЫЙ УМНЫЙ ПАРСЕР CSV
+     * Ищет столбцы по названию заголовка, а не по порядку.
      */
-    parseGoogleSheetJSON(data) {
-        this.dataLoaded = true; // !! НОВОЕ: Устанавливаем флаг, что данные пришли
-        console.log('📄 Google Sheet JSONP data received:', data);
-        
-        if (!data || !data.table || !data.table.rows || !data.table.cols) {
-            this.renderError("Получены некорректные данные от Google. Убедитесь, что таблица опубликована в интернете (Файл -> Поделиться -> Опубликовать в интернете).");
-            return;
-        }
+    parseCSV(csvText) {
+        const lines = csvText.split('\n');
+        if (lines.length < 2) return []; 
 
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, '')); 
+        console.log('Обнаруженные заголовки:', headers);
         const products = [];
-        // Получаем заголовки (l - это 'label')
-        const headers = data.table.cols.map(col => col.label.toLowerCase().trim());
-        
-        // Находим индексы по заголовкам. Это надежнее, чем порядок.
+
+        // Находим индексы по заголовкам (ищем русские или английские названия)
         const colIndices = {
             id: headers.indexOf('id'),
-            name: headers.find(h => h === 'name' || h === 'название') ? headers.indexOf(headers.find(h => h === 'name' || h === 'название')) : -1,
-            length: headers.find(h => h === 'length' || h === 'длина') ? headers.indexOf(headers.find(h => h === 'length' || h === 'длина')) : -1,
-            price: headers.find(h => h === 'price' || h === 'цена') ? headers.indexOf(headers.find(h => h === 'price' || h === 'цена')) : -1,
-            oldPrice: headers.find(h => h === 'old_price' || h === 'стараяцена') ? headers.indexOf(headers.find(h => h === 'old_price' || h === 'стараяцена')) : -1,
-            color: headers.find(h => h === 'color' || h === 'цвет') ? headers.indexOf(headers.find(h => h === 'color' || h === 'цвет')) : -1,
-            imageUrl: headers.find(h => h === 'images' || h === 'imageurl') ? headers.indexOf(headers.find(h => h === 'images' || h === 'imageurl')) : -1,
-            description: headers.find(h => h === 'description' || h === 'описание') ? headers.indexOf(headers.find(h => h === 'description' || h === 'описание')) : -1,
+            name: headers.indexOf('name') > -1 ? headers.indexOf('name') : headers.indexOf('название'),
+            length: headers.indexOf('length') > -1 ? headers.indexOf('length') : headers.indexOf('длина'),
+            price: headers.indexOf('price') > -1 ? headers.indexOf('price') : headers.indexOf('цена'),
+            oldPrice: headers.indexOf('old_price') > -1 ? headers.indexOf('old_price') : headers.indexOf('стараяцена'),
+            color: headers.indexOf('color') > -1 ? headers.indexOf('color') : headers.indexOf('цвет'),
+            imageUrl: headers.indexOf('images') > -1 ? headers.indexOf('images') : headers.indexOf('imageurl'),
+            description: headers.indexOf('description') > -1 ? headers.indexOf('description') : headers.indexOf('описание'),
         };
-
+        
         // Проверка, найдены ли ключевые столбцы
         if (colIndices.id === -1 || colIndices.price === -1 || colIndices.length === -1) {
-            this.renderError(`Критическая ошибка: В Google Таблице отсутствуют обязательные заголовки: 'id', 'price' (или 'цена'), 'length' (или 'длина'). Обнаруженные заголовки: [${headers.join(', ')}]`);
-            return;
+            this.renderError(`Критическая ошибка: В CSV отсутствуют обязательные заголовки: 'id', 'price' (или 'цена'), 'length' (или 'длина'). Обнаруженные заголовки: [${headers.join(', ')}]`);
+            return []; // Возвращаем пустой массив
         }
 
-        const rows = data.table.rows;
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
 
-        for (const row of rows) {
+            // Простой парсер CSV (не учитывает запятые внутри кавычек, но для GSheets обычно подходит)
+            const values = line.split(','); 
             const product = {};
-            
-            // Функция для безопасного получения значения (v - это 'value')
-            const getValue = (index) => (index !== -1 && row.c[index] && row.c[index].v !== null) ? row.c[index].v : null;
+
+            // Функция для безопасного получения значения
+            const getValue = (index) => (index !== -1 && values[index] !== undefined) ? values[index].trim() : null;
 
             product.id = getValue(colIndices.id);
             product.name = getValue(colIndices.name) || 'Без названия';
@@ -122,22 +114,7 @@ class HairShopCatalog {
                 products.push(product);
             }
         }
-
-        this.products = products;
-        console.log('✅ Parsed products from JSONP:', this.products.length);
-        
-        if (this.products.length === 0) {
-            this.renderError("Товары загружены, но ни один не прошел валидацию. Проверьте данные в таблице (id, price, length).");
-            return;
-        }
-
-        // 3. Теперь, когда продукты загружены, настраиваем все остальное
-        this.determineFilterRanges();
-        this.updateRangeValues();
-        this.updateRangeSliders();
-        this.renderProducts(this.products);
-        // 4. Настраиваем обработчики событий ПОСЛЕ загрузки данных
-        this.setupEventListeners();
+        return products;
     }
     
     //
