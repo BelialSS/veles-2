@@ -8,9 +8,8 @@ class HairShopCatalog {
         this.CSV_URL = "https://docs.google.com/spreadsheets/d/15KZ6DHJD4zin2nATxLG-xBGx-BClYWUDAY_mW0VIwoM/export?format=csv&gid=0";
         
         this.products = [];
-        this.filterRanges = null; // Для хранения минимальных/максимальных значений, определенных после загрузки
+        this.filterRanges = null;
         this.filters = {
-            // Начальные значения, будут обновлены после загрузки данных
             minLength: 14, 
             maxLength: 30,
             minPrice: 1000,
@@ -18,9 +17,6 @@ class HairShopCatalog {
             colors: []
         };
         
-        // УДАЛЕНО: this.PLACEHOLDER_LOGO = 'veles-logo.jpeg'; 
-        // Теперь при отсутствии изображения будет использоваться CSS-заглушка.
-
         this.init();
     }
 
@@ -60,9 +56,9 @@ class HairShopCatalog {
             this.initializeFilterRanges();
 
             this.renderProducts(this.products);
-            console.log(`app.js:${this.products.length} Products loaded!`);
+            console.log(`✅ ${this.products.length} товаров загружено!`);
         } catch (error) {
-            console.error("Error loading products:", error);
+            console.error("❌ Ошибка загрузки данных:", error);
             const container = document.getElementById('productsContainer');
             if (container) {
                 container.innerHTML = `<div style="text-align: center; color: red; padding: 50px;">
@@ -83,7 +79,7 @@ class HairShopCatalog {
         const products = [];
 
         for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g);
+            const values = this.parseCSVLine(lines[i]);
             if (!values) continue;
 
             const product = {};
@@ -95,26 +91,45 @@ class HairShopCatalog {
                     value = parseFloat(value) || 0;
                 }
                 
-                // Приводим URL к стандартному виду, если он есть
-                if (header === 'imageurl' && value && !value.startsWith('http')) {
-                    // Здесь может быть логика для относительных путей, если это необходимо
-                }
-                
                 product[header] = value;
             });
 
-            // Маппинг заголовков (пример, если они другие в таблице)
             products.push({
-                id: product.id,
-                name: product.name,
-                price: product.price,
-                oldPrice: product.oldprice,
-                length: product.length,
-                color: product.color,
-                imageUrl: product.imageurl // URL изображения
+                id: product.id || i,
+                name: product.name || 'Без названия',
+                price: product.price || 0,
+                oldPrice: product.oldprice || 0,
+                length: product.length || 0,
+                color: product.color || 'Не указан',
+                imageUrl: product.imageurl || ''
             });
         }
         return products;
+    }
+
+    /**
+     * Парсит строку CSV, учитывая кавычки
+     */
+    parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                result.push(current);
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        
+        result.push(current);
+        return result;
     }
 
     /**
@@ -127,10 +142,10 @@ class HairShopCatalog {
         const allPrices = this.products.map(p => p.price).filter(p => p > 0);
         const allColors = [...new Set(this.products.map(p => p.color).filter(c => c && c.trim() !== ''))];
 
-        const minLength = Math.floor(Math.min(...allLengths) / 10) * 10 || 10;
-        const maxLength = Math.ceil(Math.max(...allLengths) / 10) * 10 || 50;
-        const minPrice = Math.floor(Math.min(...allPrices) / 1000) * 1000 || 1000;
-        const maxPrice = Math.ceil(Math.max(...allPrices) / 1000) * 1000 || 20000;
+        const minLength = allLengths.length > 0 ? Math.floor(Math.min(...allLengths) / 10) * 10 : 10;
+        const maxLength = allLengths.length > 0 ? Math.ceil(Math.max(...allLengths) / 10) * 10 : 50;
+        const minPrice = allPrices.length > 0 ? Math.floor(Math.min(...allPrices) / 1000) * 1000 : 1000;
+        const maxPrice = allPrices.length > 0 ? Math.ceil(Math.max(...allPrices) / 1000) * 1000 : 20000;
 
         this.filterRanges = {
             length: { min: minLength, max: maxLength },
@@ -145,6 +160,7 @@ class HairShopCatalog {
             maxPrice: maxPrice,
             colors: []
         };
+        
         this.updateFilterUI(allColors);
     }
 
@@ -152,46 +168,43 @@ class HairShopCatalog {
      * Обновляет интерфейс фильтров (ползунки, метки, список цветов)
      */
     updateFilterUI(colors) {
+        // Безопасное получение элементов
         const lengthMinInput = document.getElementById('lengthMin');
         const lengthMaxInput = document.getElementById('lengthMax');
         const priceMinInput = document.getElementById('priceMin');
         const priceMaxInput = document.getElementById('priceMax');
         const colorSelect = document.getElementById('colorFilter');
 
-        if (this.filterRanges) {
-            // Длина
-            if (lengthMinInput && lengthMaxInput) {
-                lengthMinInput.min = lengthMaxInput.min = this.filterRanges.length.min;
-                lengthMinInput.max = lengthMaxInput.max = this.filterRanges.length.max;
-                lengthMinInput.value = this.filters.minLength;
-                lengthMaxInput.value = this.filters.maxLength;
-            }
+        if (!this.filterRanges) return;
 
-            // Цена
-            if (priceMinInput && priceMaxInput) {
-                priceMinInput.min = priceMaxInput.min = this.filterRanges.price.min;
-                priceMinInput.max = priceMaxInput.max = this.filterRanges.price.max;
-                priceMinInput.value = this.filters.minPrice;
-                priceMaxInput.value = this.filters.maxPrice;
-            }
-
-            // Обновляем метки (label) в HTML - ИСПРАВЛЕНИЕ: Добавлена проверка на null
-            const lengthMinLabel = document.querySelector('.filter-group:nth-child(1) .range-labels span:first-child');
-            const lengthMaxLabel = document.querySelector('.filter-group:nth-child(1) .range-labels span:last-child');
-            const priceMinLabel = document.querySelector('.filter-group:nth-child(2) .range-labels span:first-child');
-            const priceMaxLabel = document.querySelector('.filter-group:nth-child(2) .range-labels span:last-child');
-
-            if (lengthMinLabel) lengthMinLabel.textContent = `${this.filterRanges.length.min} см`;
-            if (lengthMaxLabel) lengthMaxLabel.textContent = `${this.filterRanges.length.max} см`;
-            if (priceMinLabel) priceMinLabel.textContent = `${this.filterRanges.price.min} ₽`;
-            if (priceMaxLabel) priceMaxLabel.textContent = `${this.filterRanges.price.max} ₽`;
+        // Длина
+        if (lengthMinInput && lengthMaxInput) {
+            lengthMinInput.min = this.filterRanges.length.min;
+            lengthMinInput.max = this.filterRanges.length.max;
+            lengthMaxInput.min = this.filterRanges.length.min;
+            lengthMaxInput.max = this.filterRanges.length.max;
             
-            this.updateRangeLabels();
+            lengthMinInput.value = this.filters.minLength;
+            lengthMaxInput.value = this.filters.maxLength;
         }
+
+        // Цена
+        if (priceMinInput && priceMaxInput) {
+            priceMinInput.min = this.filterRanges.price.min;
+            priceMinInput.max = this.filterRanges.price.max;
+            priceMaxInput.min = this.filterRanges.price.min;
+            priceMaxInput.max = this.filterRanges.price.max;
+            
+            priceMinInput.value = this.filters.minPrice;
+            priceMaxInput.value = this.filters.maxPrice;
+        }
+
+        // Обновляем метки диапазонов
+        this.updateRangeLabels();
 
         // Цвета
         if (colorSelect) {
-            colorSelect.innerHTML = '';
+            colorSelect.innerHTML = '<option value="">Все цвета</option>';
             colors.forEach(color => {
                 const option = document.createElement('option');
                 option.value = color;
@@ -205,7 +218,6 @@ class HairShopCatalog {
      * Настройка обработчиков событий для элементов управления.
      */
     setupEventListeners() {
-        const productsContainer = document.getElementById('productsContainer');
         const applyFiltersBtn = document.getElementById('applyFilters');
         const resetFiltersBtn = document.getElementById('resetFilters');
 
@@ -213,7 +225,6 @@ class HairShopCatalog {
         const lengthMaxInput = document.getElementById('lengthMax');
         const priceMinInput = document.getElementById('priceMin');
         const priceMaxInput = document.getElementById('priceMax');
-        const colorFilter = document.getElementById('colorFilter');
 
         // События для обновления значений при движении ползунков
         [lengthMinInput, lengthMaxInput, priceMinInput, priceMaxInput].forEach(input => {
@@ -236,20 +247,13 @@ class HairShopCatalog {
         }
 
         // Событие для добавления в корзину (используем делегирование)
+        const productsContainer = document.getElementById('productsContainer');
         if (productsContainer) {
             productsContainer.addEventListener('click', (e) => {
                 if (e.target.classList.contains('add-to-cart')) {
                     const productId = e.target.getAttribute('data-id');
                     this.addToCart(productId);
                 }
-            });
-        }
-
-        // Настройка мультиселекта цвета
-        if (colorFilter) {
-            colorFilter.addEventListener('change', () => {
-                // При изменении цвета не применяем фильтры сразу, ждем кнопку "Применить"
-                console.log('Цвет изменен, нажмите "Применить фильтры"');
             });
         }
     }
@@ -271,7 +275,9 @@ class HairShopCatalog {
             const lengthMax = parseInt(lengthMaxInput.value);
 
             // Убеждаемся, что min не больше max
-            if (lengthMin > lengthMax) lengthMinInput.value = lengthMax;
+            if (lengthMin > lengthMax) {
+                lengthMinInput.value = lengthMax;
+            }
 
             lengthValue.textContent = `${Math.min(lengthMin, lengthMax)}-${Math.max(lengthMin, lengthMax)} см`;
         }
@@ -280,7 +286,9 @@ class HairShopCatalog {
             const priceMin = parseInt(priceMinInput.value);
             const priceMax = parseInt(priceMaxInput.value);
 
-            if (priceMin > priceMax) priceMinInput.value = priceMax;
+            if (priceMin > priceMax) {
+                priceMinInput.value = priceMax;
+            }
 
             priceValue.textContent = `${Math.min(priceMin, priceMax)}-${Math.max(priceMin, priceMax)} ₽`;
         }
@@ -296,19 +304,19 @@ class HairShopCatalog {
         const priceMaxInput = document.getElementById('priceMax');
         const colorFilter = document.getElementById('colorFilter');
 
-        const selectedColors = colorFilter ? Array.from(colorFilter.options)
-                                   .filter(option => option.selected)
+        const selectedColors = colorFilter ? Array.from(colorFilter.selectedOptions)
+                                   .filter(option => option.value !== '')
                                    .map(option => option.value) : [];
 
         this.filters = {
-            minLength: lengthMinInput && lengthMaxInput ? Math.min(parseInt(lengthMinInput.value), parseInt(lengthMaxInput.value)) : this.filters.minLength,
-            maxLength: lengthMinInput && lengthMaxInput ? Math.max(parseInt(lengthMinInput.value), parseInt(lengthMaxInput.value)) : this.filters.maxLength,
-            minPrice: priceMinInput && priceMaxInput ? Math.min(parseInt(priceMinInput.value), parseInt(priceMaxInput.value)) : this.filters.minPrice,
-            maxPrice: priceMinInput && priceMaxInput ? Math.max(parseInt(priceMinInput.value), parseInt(priceMaxInput.value)) : this.filters.maxPrice,
+            minLength: lengthMinInput ? parseInt(lengthMinInput.value) : this.filters.minLength,
+            maxLength: lengthMaxInput ? parseInt(lengthMaxInput.value) : this.filters.maxLength,
+            minPrice: priceMinInput ? parseInt(priceMinInput.value) : this.filters.minPrice,
+            maxPrice: priceMaxInput ? parseInt(priceMaxInput.value) : this.filters.maxPrice,
             colors: selectedColors
         };
 
-        console.log('Текущие фильтры:', this.filters);
+        console.log('🔍 Текущие фильтры:', this.filters);
     }
 
     /**
@@ -330,33 +338,25 @@ class HairShopCatalog {
      * Создает HTML-разметку для одной карточки товара.
      */
     createProductCard(product) {
-        // Проверяем, есть ли старая цена для отображения скидки
         const hasDiscount = product.oldPrice && product.oldPrice > product.price;
         const priceDisplay = hasDiscount 
             ? `<span class="product-price">${product.price.toLocaleString()} ₽</span>
                <span class="product-old-price">${product.oldPrice.toLocaleString()} ₽</span>`
             : `<span class="product-price">${product.price.toLocaleString()} ₽</span>`;
 
-        // Если URL пуст, используем пустую строку, чтобы предотвратить загрузку
         const imageUrl = product.imageUrl && product.imageUrl.trim() !== '' ? product.imageUrl : '';
-        
-        // Добавляем класс 'no-image', если изображение отсутствует. 
-        // В styles.css уже есть background-color, который будет выступать заглушкой.
-        const imageClass = imageUrl === '' ? 'no-image' : ''; 
+        const imageClass = imageUrl === '' ? 'no-image' : '';
 
         return `
             <div class="product-card" data-id="${product.id}">
                 <div class="product-image ${imageClass}">
-                    <!-- Если imageUrl пуст, src будет пустым, и будет видно фоновое заполнение (заглушка) из CSS -->
-                    <img src="${imageUrl}" 
-                         alt="${product.name}" 
-                         onerror="this.onerror=null; this.style.display='none';">
+                    ${imageUrl ? `<img src="${imageUrl}" alt="${product.name}" onerror="this.style.display='none'">` : ''}
                 </div>
                 <div class="product-info">
-                    <h3>${product.name || 'Название не указано'}</h3>
+                    <h3>${product.name}</h3>
                     <div class="product-meta">
-                        <span>Длина: ${product.length || 'N/A'} см</span>
-                        <span>Цвет: ${product.color || 'N/A'}</span>
+                        <span>Длина: ${product.length} см</span>
+                        <span>Цвет: ${product.color}</span>
                     </div>
                     ${priceDisplay}
                     <button class="btn-primary add-to-cart" data-id="${product.id}">
@@ -372,16 +372,12 @@ class HairShopCatalog {
      */
     applyFilters() {
         const filteredProducts = this.products.filter(product => {
-            // Фильтр по длине
             const lengthMatch = product.length >= this.filters.minLength && 
                               product.length <= this.filters.maxLength;
             
-            // Фильтр по цене
             const priceMatch = product.price >= this.filters.minPrice && 
                              product.price <= this.filters.maxPrice;
             
-            // Фильтр по цвету
-            // Если массив filters.colors пуст, считаем совпадением (true)
             const colorMatch = this.filters.colors.length === 0 || 
                              this.filters.colors.includes(product.color);
             
@@ -389,6 +385,7 @@ class HairShopCatalog {
         });
         
         this.renderProducts(filteredProducts);
+        console.log(`🔍 Отображено ${filteredProducts.length} из ${this.products.length} товаров`);
     }
 
     /**
@@ -396,51 +393,47 @@ class HairShopCatalog {
      */
     resetFilters() {
         if (this.filterRanges) {
-            // Сброс числовых фильтров к крайним значениям диапазона
             this.filters = {
                 minLength: this.filterRanges.length.min,
                 maxLength: this.filterRanges.length.max,
                 minPrice: this.filterRanges.price.min,
                 maxPrice: this.filterRanges.price.max,
-                colors: [] // Сброс цвета
+                colors: []
             };
             
             // Сброс визуальных элементов
-            const colorFilter = document.getElementById('colorFilter');
-            if (colorFilter) {
-                colorFilter.selectedIndex = -1; // Сброс выбора цвета
-            }
-            
-            // Применяем новые значения к ползункам и меткам
             const lengthMinInput = document.getElementById('lengthMin');
             const lengthMaxInput = document.getElementById('lengthMax');
             const priceMinInput = document.getElementById('priceMin');
             const priceMaxInput = document.getElementById('priceMax');
+            const colorFilter = document.getElementById('colorFilter');
             
             if (lengthMinInput) lengthMinInput.value = this.filters.minLength;
             if (lengthMaxInput) lengthMaxInput.value = this.filters.maxLength;
             if (priceMinInput) priceMinInput.value = this.filters.minPrice;
             if (priceMaxInput) priceMaxInput.value = this.filters.maxPrice;
+            if (colorFilter) colorFilter.selectedIndex = 0;
             
             this.updateRangeLabels();
             this.applyFilters();
             
-            console.log('✅ Фильтры сброшены к начальным значениям.');
+            console.log('✅ Фильтры сброшены');
         }
     }
 
     /**
-     * Имитация добавления товара в корзину (заменено на console.log).
+     * Добавление товара в корзину
      */
     addToCart(productId) {
-        console.log(`🛒 Товар #${productId} добавлен в корзину!`);
+        const product = this.products.find(p => p.id == productId);
+        if (product) {
+            console.log(`🛒 Товар "${product.name}" добавлен в корзину!`);
+            // Здесь можно добавить логику для реальной корзины
+        }
     }
 }
 
 // Запускаем каталог при загрузке DOM
 document.addEventListener('DOMContentLoaded', function() {
-    // Используем setTimeout, чтобы быть уверенным, что DOM готов
-    setTimeout(() => {
-        window.catalog = new HairShopCatalog();
-    }, 0);
+    window.catalog = new HairShopCatalog();
 });
