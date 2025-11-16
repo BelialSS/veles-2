@@ -18,6 +18,7 @@ class HairShopCatalog {
         };
         
         this.cart = [];
+        this.telegramUser = null;
         
         this.init();
     }
@@ -26,11 +27,50 @@ class HairShopCatalog {
      * Инициализация приложения: показывает загрузку, загружает данные и настраивает события.
      */
     async init() {
+        this.initTelegram();
         this.renderLoading();
         await this.loadProductsFromCSV();
         this.setupEventListeners();
         this.updateCartCount();
         console.log('✅ Catalog ready for Telegram WebApp');
+    }
+
+    /**
+     * Инициализация Telegram WebApp
+     */
+    initTelegram() {
+        if (window.Telegram && Telegram.WebApp) {
+            this.telegramUser = Telegram.WebApp.initDataUnsafe?.user;
+            Telegram.WebApp.expand();
+            Telegram.WebApp.ready();
+            
+            console.log('✅ Telegram WebApp initialized');
+            console.log('👤 User:', this.telegramUser);
+            
+            // Обновляем информацию профиля
+            this.updateProfileInfo();
+        } else {
+            console.log('⚠️ Telegram WebApp not detected, running in browser mode');
+            // Заглушка для тестирования в браузере
+            this.telegramUser = {
+                first_name: 'Тестовый',
+                last_name: 'Пользователь',
+                username: 'test_user'
+            };
+        }
+    }
+
+    /**
+     * Обновляет информацию профиля
+     */
+    updateProfileInfo() {
+        const profileBtn = document.getElementById('profileBtn');
+        if (profileBtn && this.telegramUser) {
+            // Можно добавить аватар или другую информацию
+            if (this.telegramUser.first_name) {
+                profileBtn.title = `${this.telegramUser.first_name} ${this.telegramUser.last_name || ''}`.trim();
+            }
+        }
     }
 
     /**
@@ -252,8 +292,7 @@ class HairShopCatalog {
         const profileBtn = document.getElementById('profileBtn');
         if (profileBtn) {
             profileBtn.addEventListener('click', () => {
-                console.log('👤 Открыть профиль');
-                // Здесь можно добавить функционал профиля
+                this.showProfile();
             });
         }
 
@@ -261,7 +300,23 @@ class HairShopCatalog {
         const cartBtn = document.getElementById('cartBtn');
         if (cartBtn) {
             cartBtn.addEventListener('click', () => {
-                this.showCart();
+                this.showCartScreen();
+            });
+        }
+
+        // Кнопка назад из корзины
+        const backFromCart = document.getElementById('backFromCart');
+        if (backFromCart) {
+            backFromCart.addEventListener('click', () => {
+                this.showCatalogScreen();
+            });
+        }
+
+        // Кнопка оформления заказа
+        const checkoutBtn = document.getElementById('checkoutBtn');
+        if (checkoutBtn) {
+            checkoutBtn.addEventListener('click', () => {
+                this.checkout();
             });
         }
 
@@ -301,12 +356,27 @@ class HairShopCatalog {
         const productsContainer = document.getElementById('productsContainer');
         if (productsContainer) {
             productsContainer.addEventListener('click', (e) => {
-                if (e.target.classList.contains('add-to-cart')) {
+                if (e.target.classList.contains('add-to-cart') || 
+                    e.target.classList.contains('remove-from-cart')) {
                     const productId = e.target.getAttribute('data-id');
-                    this.addToCart(productId);
+                    this.toggleCart(productId);
                 }
             });
         }
+    }
+
+    /**
+     * Переключение экранов
+     */
+    showCatalogScreen() {
+        document.getElementById('catalogScreen').classList.add('active');
+        document.getElementById('cartScreen').classList.remove('active');
+    }
+
+    showCartScreen() {
+        document.getElementById('catalogScreen').classList.remove('active');
+        document.getElementById('cartScreen').classList.add('active');
+        this.renderCart();
     }
 
     /**
@@ -412,6 +482,10 @@ class HairShopCatalog {
         const imageUrl = product.imageUrl && product.imageUrl.trim() !== '' ? product.imageUrl : '';
         const imageClass = imageUrl === '' ? 'no-image' : '';
 
+        const isInCart = this.cart.some(item => item.id == product.id);
+        const buttonText = isInCart ? 'В корзине' : 'Добавить в корзину';
+        const buttonClass = isInCart ? 'btn-primary btn-in-cart remove-from-cart' : 'btn-primary add-to-cart';
+
         return `
             <div class="product-card" data-id="${product.id}">
                 <div class="product-image ${imageClass}">
@@ -427,8 +501,8 @@ class HairShopCatalog {
                         <span>Цвет: ${product.color}</span>
                     </div>
                     ${priceDisplay}
-                    <button class="btn-primary add-to-cart" data-id="${product.id}">
-                        Добавить в корзину
+                    <button class="${buttonClass}" data-id="${product.id}">
+                        ${buttonText}
                     </button>
                 </div>
             </div>
@@ -490,28 +564,54 @@ class HairShopCatalog {
     }
 
     /**
-     * Добавление товара в корзину
+     * Переключение товара в корзине
      */
-    addToCart(productId) {
+    toggleCart(productId) {
         const product = this.products.find(p => p.id == productId);
         if (product) {
-            // Проверяем, есть ли товар уже в корзине
-            const existingItem = this.cart.find(item => item.id == productId);
+            const existingIndex = this.cart.findIndex(item => item.id == productId);
             
-            if (existingItem) {
-                existingItem.quantity += 1;
+            if (existingIndex > -1) {
+                // Удаляем из корзины
+                this.cart.splice(existingIndex, 1);
+                this.showNotification(`Товар "${product.name}" удален из корзины`);
             } else {
+                // Добавляем в корзину
                 this.cart.push({
                     ...product,
                     quantity: 1
                 });
+                this.showNotification(`Товар "${product.name}" добавлен в корзину!`);
             }
             
             this.updateCartCount();
-            console.log(`🛒 Товар "${product.name}" добавлен в корзину!`);
+            this.updateProductButton(productId);
             
-            // Показываем уведомление
-            this.showNotification(`Товар "${product.name}" добавлен в корзину!`);
+            // Если мы на экране корзины, обновляем его
+            if (document.getElementById('cartScreen').classList.contains('active')) {
+                this.renderCart();
+            }
+        }
+    }
+
+    /**
+     * Обновляет кнопку товара
+     */
+    updateProductButton(productId) {
+        const productCard = document.querySelector(`.product-card[data-id="${productId}"]`);
+        if (productCard) {
+            const button = productCard.querySelector('button');
+            const isInCart = this.cart.some(item => item.id == productId);
+            
+            if (isInCart) {
+                button.textContent = 'В корзине';
+                button.className = 'btn-primary btn-in-cart remove-from-cart';
+                button.setAttribute('data-id', productId);
+            } else {
+                button.textContent = 'Добавить в корзину';
+                button.className = 'btn-primary add-to-cart';
+                button.setAttribute('data-id', productId);
+            }
         }
     }
 
@@ -528,20 +628,150 @@ class HairShopCatalog {
     }
 
     /**
-     * Показывает корзину
+     * Рендеринг корзины
      */
-    showCart() {
+    renderCart() {
+        const cartItems = document.getElementById('cartItems');
+        const totalAmount = document.getElementById('totalAmount');
+        
+        if (this.cart.length === 0) {
+            cartItems.innerHTML = '<div class="empty-cart">🛒 Корзина пуста</div>';
+            totalAmount.textContent = '0';
+            return;
+        }
+
+        const total = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        totalAmount.textContent = total.toLocaleString();
+
+        cartItems.innerHTML = this.cart.map(item => `
+            <div class="cart-item" data-id="${item.id}">
+                <div class="cart-item-image">
+                    ${item.imageUrl ? 
+                        `<img src="${item.imageUrl}" alt="${item.name}">` : 
+                        '📷'
+                    }
+                </div>
+                <div class="cart-item-info">
+                    <div class="cart-item-name">${item.name}</div>
+                    <div class="cart-item-meta">
+                        <span>Длина: ${item.length} см</span>
+                        <span>Цвет: ${item.color}</span>
+                    </div>
+                    <div class="cart-item-price">${item.price.toLocaleString()} ₽</div>
+                </div>
+                <div class="cart-item-controls">
+                    <div class="quantity-controls">
+                        <button class="quantity-btn decrease-btn" data-id="${item.id}">-</button>
+                        <span class="quantity">${item.quantity}</span>
+                        <button class="quantity-btn increase-btn" data-id="${item.id}">+</button>
+                    </div>
+                    <button class="remove-btn" data-id="${item.id}">Удалить</button>
+                </div>
+            </div>
+        `).join('');
+
+        // Добавляем обработчики для кнопок в корзине
+        cartItems.addEventListener('click', (e) => {
+            if (e.target.classList.contains('decrease-btn')) {
+                this.decreaseQuantity(e.target.getAttribute('data-id'));
+            } else if (e.target.classList.contains('increase-btn')) {
+                this.increaseQuantity(e.target.getAttribute('data-id'));
+            } else if (e.target.classList.contains('remove-btn')) {
+                this.removeFromCart(e.target.getAttribute('data-id'));
+            }
+        });
+    }
+
+    /**
+     * Увеличивает количество товара
+     */
+    increaseQuantity(productId) {
+        const item = this.cart.find(item => item.id == productId);
+        if (item) {
+            item.quantity += 1;
+            this.updateCartCount();
+            this.renderCart();
+        }
+    }
+
+    /**
+     * Уменьшает количество товара
+     */
+    decreaseQuantity(productId) {
+        const item = this.cart.find(item => item.id == productId);
+        if (item) {
+            if (item.quantity > 1) {
+                item.quantity -= 1;
+            } else {
+                this.removeFromCart(productId);
+                return;
+            }
+            this.updateCartCount();
+            this.renderCart();
+        }
+    }
+
+    /**
+     * Удаляет товар из корзины
+     */
+    removeFromCart(productId) {
+        const itemIndex = this.cart.findIndex(item => item.id == productId);
+        if (itemIndex > -1) {
+            const item = this.cart[itemIndex];
+            this.cart.splice(itemIndex, 1);
+            this.updateCartCount();
+            this.updateProductButton(productId);
+            this.renderCart();
+            this.showNotification(`Товар "${item.name}" удален из корзины`);
+        }
+    }
+
+    /**
+     * Показывает профиль
+     */
+    showProfile() {
+        if (this.telegramUser) {
+            const userName = `${this.telegramUser.first_name} ${this.telegramUser.last_name || ''}`.trim();
+            const userInfo = this.telegramUser.username ? 
+                `@${this.telegramUser.username}` : 'Имя пользователя не указано';
+            
+            alert(`👤 Ваш профиль:\n\n${userName}\n${userInfo}\n\n💎 Товаров в корзине: ${this.cart.length}`);
+        } else {
+            alert('👤 Профиль Telegram не доступен');
+        }
+    }
+
+    /**
+     * Оформление заказа
+     */
+    checkout() {
         if (this.cart.length === 0) {
             alert('🛒 Корзина пуста');
             return;
         }
 
         const total = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const cartItems = this.cart.map(item => 
-            `• ${item.name} - ${item.quantity} × ${item.price.toLocaleString()} ₽ = ${(item.price * item.quantity).toLocaleString()} ₽`
+        const orderDetails = this.cart.map(item => 
+            `• ${item.name} - ${item.quantity} × ${item.price.toLocaleString()} ₽`
         ).join('\n');
 
-        alert(`🛒 Ваша корзина:\n\n${cartItems}\n\n💎 Итого: ${total.toLocaleString()} ₽`);
+        const message = `🛍️ Новый заказ!\n\n` +
+                       `👤 Покупатель: ${this.telegramUser?.first_name || 'Неизвестно'}\n` +
+                       `📦 Товары:\n${orderDetails}\n\n` +
+                       `💎 Итого: ${total.toLocaleString()} ₽\n\n` +
+                       `🕐 Время: ${new Date().toLocaleString()}`;
+
+        // В реальном приложении здесь будет отправка на сервер
+        alert(`✅ Заказ оформлен!\n\n${message}\n\nС вами свяжутся для подтверждения заказа.`);
+        
+        // Очищаем корзину после заказа
+        this.cart = [];
+        this.updateCartCount();
+        this.renderCart();
+        this.showCatalogScreen();
+        
+        // Обновляем кнопки товаров
+        this.products.forEach(product => this.updateProductButton(product.id));
     }
 
     /**
