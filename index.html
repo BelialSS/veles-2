@@ -1,308 +1,48 @@
-/* Общие стили */
-:root {
-    --primary-color: #667eea;
-    --primary-hover: #5a67d8;
-    --text-color: #333;
-    --shadow-light: 0 4px 6px rgba(0,0,0,0.1);
-    --shadow-hover: 0 10px 25px rgba(0,0,0,0.15);
-}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hair Shop - Волосы для наращивания</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>💇‍♀️ Hair Shop</h1>
+            <p>Премиальные волосы для наращивания</p>
+        </header>
 
-body {
-    font-family: 'Arial', sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f7f9fc;
-    color: var(--text-color);
-}
+        <div class="catalog">
+            <h2>🛍 Каталог волос</h2>
+            <div class="categories">
+                <div class="category-card">
+                    <h3>Бразильские волосы</h3>
+                    <p>От 4,500 ₽</p>
+                </div>
+                <div class="category-card">
+                    <h3>Перуанские волосы</h3>
+                    <p>От 3,800 ₽</p>
+                </div>
+                <div class="category-card">
+                    <h3>Монгольские волосы</h3>
+                    <p>От 5,200 ₽</p>
+                </div>
+                <div class="category-card">
+                    <h3>Европейские волосы</h3>
+                    <p>От 4,000 ₽</p>
+                </div>
+            </div>
+        </div>
 
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1.5rem;
-}
+        <div class="filters">
+            <h3>🔍 Фильтры:</h3>
+            <p>• Длина: 14-16см, 18-20см, 22-24см, 26-28см, 30+см</p>
+            <p>• Цвет: Натуральные, Окрашенные, Омбре</p>
+            <p>• Вес: 50г, 100г, 150г, 200г</p>
+        </div>
+    </div>
 
-h1 {
-    color: var(--primary-color);
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-/* Header/Navigation */
-header {
-    background-color: white;
-    box-shadow: var(--shadow-light);
-    padding: 1rem 1.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.logo {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--primary-color);
-}
-
-nav a {
-    margin-left: 1.5rem;
-    text-decoration: none;
-    color: var(--text-color);
-    font-weight: 500;
-    transition: color 0.2s;
-}
-
-nav a:hover {
-    color: var(--primary-color);
-}
-
-/* Раздел фильтров */
-.filter-controls-wrapper {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 10px;
-    box-shadow: var(--shadow-light);
-    margin-bottom: 2rem;
-}
-
-.filter-section h3 {
-    margin-top: 0;
-    color: var(--primary-color);
-    border-bottom: 2px solid #eee;
-    padding-bottom: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-.filter-group {
-    margin-bottom: 1.5rem;
-}
-
-.filter-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    color: #555;
-}
-
-/* Стили для двойных ползунков */
-.range-slider {
-    position: relative;
-    height: 40px;
-    display: flex;
-    align-items: center;
-}
-
-.slider {
-    position: absolute;
-    width: 100%;
-    height: 5px;
-    background: #ddd;
-    border-radius: 5px;
-    outline: none;
-    -webkit-appearance: none;
-}
-
-.slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 20px;
-    height: 20px;
-    background: var(--primary-color);
-    border-radius: 50%;
-    cursor: pointer;
-    border: 2px solid white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-
-.slider::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    background: var(--primary-color);
-    border-radius: 50%;
-    cursor: pointer;
-    border: 2px solid white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-
-.range-labels {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 5px;
-    font-size: 0.8rem;
-    color: #666;
-}
-
-/* Мультиселект */
-.multi-select {
-    width: 100%;
-    height: 100px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 5px;
-}
-
-/* Карточки товаров с изображениями */
-.products-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.product-card {
-    border: 1px solid #eee;
-    border-radius: 10px;
-    overflow: hidden;
-    transition: transform 0.3s, box-shadow 0.3s;
-    background: white;
-}
-
-.product-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-hover);
-}
-
-.product-image {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-    background: #f8f9fa;
-}
-
-.product-info {
-    padding: 1rem;
-}
-
-.product-name {
-    font-size: 1.2rem;
-    color: var(--text-color);
-    margin-top: 0;
-    margin-bottom: 0.5rem;
-}
-
-.product-description {
-    font-size: 0.9rem;
-    color: #777;
-    margin-bottom: 1rem;
-    line-height: 1.4;
-}
-
-.product-specs {
-    display: flex;
-    gap: 1rem;
-    font-size: 0.85rem;
-    color: #555;
-    margin-bottom: 1rem;
-}
-
-.price-section {
-    display: flex;
-    align-items: baseline;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-.product-price {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #e53e3e; /* Яркий цвет для цены */
-    margin: 0;
-}
-
-.product-old-price {
-    text-decoration: line-through;
-    color: #999;
-    font-size: 1rem;
-}
-
-/* Кнопки */
-.add-to-cart-button {
-    width: 100%;
-    padding: 0.75rem;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: background-color 0.2s, transform 0.1s;
-}
-
-.add-to-cart-button:hover {
-    background-color: var(--primary-hover);
-    transform: translateY(-1px);
-}
-
-.reset-button {
-    display: block;
-    width: 100%;
-    padding: 0.75rem;
-    background-color: #e2e8f0;
-    color: #4a5568;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    margin-top: 1rem;
-    transition: background-color 0.2s;
-}
-
-.reset-button:hover {
-    background-color: #cbd5e0;
-}
-
-/* Стили для загрузки и ошибок */
-.loading-indicator, .error-message, .no-results {
-    text-align: center;
-    padding: 4rem 2rem;
-    border: 2px dashed #ccc;
-    border-radius: 10px;
-    grid-column: 1 / -1; /* Занять всю ширину */
-    background: white;
-}
-
-.loading-indicator h2, .error-message h3 {
-    color: var(--primary-color);
-}
-
-.spinner {
-    border: 5px solid #f3f3f3;
-    border-top: 5px solid var(--primary-color);
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    margin: 20px auto;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-.error-message {
-    border-color: #e53e3e;
-    color: #e53e3e;
-}
-
-.error-message p {
-    color: var(--text-color);
-}
-
-/* Адаптивность */
-@media (max-width: 768px) {
-    header {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    nav {
-        margin-top: 0.5rem;
-    }
-    
-    nav a {
-        margin: 0 0.5rem;
-    }
-
-    .container {
-        padding: 1rem;
-    }
-}
+    <script src="app.js"></script>
+</body>
+</html>

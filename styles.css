@@ -1,316 +1,102 @@
-/* Базовые стили для всего приложения */
-body {
-    font-family: Arial, sans-serif;
+* {
     margin: 0;
     padding: 0;
-    background-color: #f4f4f4;
-    color: #333;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
-    display: flex;
-    flex-direction: column;
+    color: #333;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
 }
 
 .container {
     max-width: 1200px;
-    margin: 20px auto;
-    padding: 0 20px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    flex-grow: 1;
+    margin: 0 auto;
+    padding: 20px;
 }
 
-/* Header */
 .header {
-    background-color: #333;
-    color: #fff;
-    padding: 20px 0;
     text-align: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    color: white;
+    margin-bottom: 2rem;
 }
 
 .header h1 {
-    margin: 0;
-    font-size: 2.5em;
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
 }
 
-.header .subtitle {
-    margin-top: 5px;
-    font-size: 1.1em;
-    color: #ccc;
+.catalog {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    margin-bottom: 2rem;
 }
 
-/* Footer */
-.footer {
-    background-color: #333;
-    color: #fff;
-    text-align: center;
-    padding: 15px 0;
-    margin-top: auto;
-    box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
-}
-
-/* Стили для секции фильтров */
-.filter-section {
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    flex: 0 0 280px; /* Фиксированная ширина для сайдбара */
-    margin-bottom: 20px;
-}
-
-.filter-section h3 {
-    margin-top: 0;
-    color: #555;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
-    margin-bottom: 20px;
-}
-
-.filter-group {
-    margin-bottom: 25px;
-}
-
-.filter-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: bold;
-    color: #444;
-}
-
-.filter-group small {
-    display: block;
-    margin-top: 5px;
-    color: #777;
-    font-size: 0.85em;
-}
-
-/* Стили для ползунков (Range Sliders) */
-.range-slider {
-    position: relative;
-    height: 30px;
-    display: flex;
-    align-items: center;
-}
-
-.range-slider input[type="range"] {
-    -webkit-appearance: none;
-    width: 100%;
-    height: 6px;
-    background: #ddd;
-    border-radius: 5px;
-    outline: none;
-    position: absolute;
-    pointer-events: none; /* Чтобы оба ползунка были активны */
-}
-
-.range-slider input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 18px;
-    height: 18px;
-    background: #007bff; /* Цвет ползунка */
-    border-radius: 50%;
-    cursor: pointer;
-    pointer-events: all; /* Включаем события для ползунка */
-    box-shadow: 0 0 5px rgba(0,0,0,0.2);
-    border: 2px solid #fff;
-}
-
-.range-slider input[type="range"]::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
-    background: #007bff;
-    border-radius: 50%;
-    cursor: pointer;
-    pointer-events: all;
-    box-shadow: 0 0 5px rgba(0,0,0,0.2);
-    border: 2px solid #fff;
-}
-
-.range-labels {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.9em;
-    color: #666;
-    margin-top: 5px;
-}
-
-/* Стили для мультиселекта */
-.multi-select {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    background-color: #f9f9f9;
-    font-size: 1em;
-    min-height: 100px;
-}
-
-.multi-select option {
-    padding: 5px;
-}
-
-.multi-select option:checked {
-    background-color: #007bff;
-    color: #fff;
-}
-
-.reset-button {
-    display: block;
-    width: 100%;
-    padding: 10px 15px;
-    background-color: #dc3545; /* Красный цвет для кнопки сброса */
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1em;
-    transition: background-color 0.3s ease;
-    margin-top: 20px;
-}
-
-.reset-button:hover {
-    background-color: #c82333;
-}
-
-
-/* Стили для контейнера товаров */
-.products-container {
-    flex: 1; /* Занимает оставшееся пространство */
+.categories {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* 280px - минимальная ширина карточки */
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
 }
 
-/* Стили для карточки товара */
-.product-card {
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.2s ease-in-out;
-}
-
-.product-card:hover {
-    transform: translateY(-5px);
-}
-
-.product-image {
-    width: 100%;
-    height: 200px; /* Фиксированная высота для изображений */
-    object-fit: cover; /* Обрезка изображения для заполнения */
-    border-bottom: 1px solid #eee;
-}
-
-.product-info {
-    padding: 15px;
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.product-name {
-    font-size: 1.3em;
-    margin-top: 0;
-    margin-bottom: 8px;
-    color: #333;
-    min-height: 40px; /* чтобы название не прыгало при разной длине */
-}
-
-.product-description, .product-details {
-    font-size: 0.9em;
-    color: #666;
-    margin-bottom: 5px;
-}
-
-.price-section {
-    display: flex;
-    align-items: baseline;
-    margin-top: auto; /* Прижимает цену и кнопку вниз */
-    margin-bottom: 10px;
-}
-
-.product-price {
-    font-size: 1.4em;
-    font-weight: bold;
-    color: #007bff;
-    margin-right: 10px;
-}
-
-.product-old-price {
-    font-size: 0.9em;
-    color: #999;
-    text-decoration: line-through;
-}
-
-.add-to-cart-button {
-    background-color: #28a745; /* Зеленый для кнопки корзины */
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1em;
-    transition: background-color 0.3s ease;
-    width: 100%;
-    margin-top: 10px;
-}
-
-.add-to-cart-button:hover {
-    background-color: #218838;
-}
-
-/* Сообщения о загрузке/ошибке/нет результатов */
-.loading-indicator, .error-message, .no-results {
-    grid-column: 1 / -1; /* Распространяется на всю ширину сетки */
+.category-card {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 10px;
     text-align: center;
-    padding: 40px;
-    font-size: 1.2em;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.category-card:hover {
+    transform: translateY(-5px);
+    border-color: #667eea;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.category-card h3 {
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.category-card p {
+    color: #667eea;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.filters {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.filters h3 {
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.filters p {
+    margin-bottom: 0.5rem;
     color: #666;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 
-.error-message {
-    color: #dc3545;
-}
-
-/* Адаптивный дизайн */
 @media (max-width: 768px) {
     .container {
-        flex-direction: column;
-        margin: 10px auto;
-        padding: 0 10px;
+        padding: 10px;
     }
-
-    .filter-section {
-        flex: 0 0 100%; /* Занимает всю ширину */
-        margin-bottom: 10px;
-    }
-
-    .products-container {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* Меньше карточек на мобильных */
-    }
-
+    
     .header h1 {
-        font-size: 1.8em;
+        font-size: 2rem;
     }
-
-    .header .subtitle {
-        font-size: 0.9em;
-    }
-
-    .product-card {
-        margin: 0;
-    }
-
-    .product-image {
-        height: 150px;
+    
+    .categories {
+        grid-template-columns: 1fr;
     }
 }
