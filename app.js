@@ -10,10 +10,10 @@ class HairShopCatalog {
         this.products = [];
         this.filterRanges = null;
         this.filters = {
-            minLength: 14, 
-            maxLength: 30,
-            minPrice: 1000,
-            maxPrice: 10000,
+            minLength: 0, 
+            maxLength: 0,
+            minPrice: 0,
+            maxPrice: 0,
             colors: []
         };
         
@@ -36,7 +36,7 @@ class HairShopCatalog {
     renderLoading() {
         const container = document.getElementById('productsContainer');
         if (container) {
-            container.innerHTML = '<div style="text-align: center; padding: 50px;">Загрузка данных...</div>';
+            container.innerHTML = '<div style="text-align: center; padding: 50px; color: #ffc400;">Загрузка данных...</div>';
         }
     }
 
@@ -61,7 +61,7 @@ class HairShopCatalog {
             console.error("❌ Ошибка загрузки данных:", error);
             const container = document.getElementById('productsContainer');
             if (container) {
-                container.innerHTML = `<div style="text-align: center; color: red; padding: 50px;">
+                container.innerHTML = `<div style="text-align: center; color: #ffc400; padding: 50px;">
                     Ошибка загрузки данных. Проверьте URL CSV и настройки доступа: ${error.message}
                 </div>`;
             }
@@ -142,10 +142,11 @@ class HairShopCatalog {
         const allPrices = this.products.map(p => p.price).filter(p => p > 0);
         const allColors = [...new Set(this.products.map(p => p.color).filter(c => c && c.trim() !== ''))];
 
-        const minLength = allLengths.length > 0 ? Math.floor(Math.min(...allLengths) / 10) * 10 : 10;
-        const maxLength = allLengths.length > 0 ? Math.ceil(Math.max(...allLengths) / 10) * 10 : 50;
-        const minPrice = allPrices.length > 0 ? Math.floor(Math.min(...allPrices) / 1000) * 1000 : 1000;
-        const maxPrice = allPrices.length > 0 ? Math.ceil(Math.max(...allPrices) / 1000) * 1000 : 20000;
+        // Автоматическое определение диапазонов из данных
+        const minLength = allLengths.length > 0 ? Math.floor(Math.min(...allLengths)) : 10;
+        const maxLength = allLengths.length > 0 ? Math.ceil(Math.max(...allLengths)) : 50;
+        const minPrice = allPrices.length > 0 ? Math.floor(Math.min(...allPrices) / 100) * 100 : 1000;
+        const maxPrice = allPrices.length > 0 ? Math.ceil(Math.max(...allPrices) / 100) * 100 : 10000;
 
         this.filterRanges = {
             length: { min: minLength, max: maxLength },
@@ -218,6 +219,32 @@ class HairShopCatalog {
      * Настройка обработчиков событий для элементов управления.
      */
     setupEventListeners() {
+        // Кнопка переключения фильтров
+        const filterToggle = document.getElementById('filterToggle');
+        const filterSidebar = document.getElementById('filterSidebar');
+        const closeFilters = document.getElementById('closeFilters');
+
+        if (filterToggle && filterSidebar) {
+            filterToggle.addEventListener('click', () => {
+                filterSidebar.classList.add('active');
+            });
+        }
+
+        if (closeFilters && filterSidebar) {
+            closeFilters.addEventListener('click', () => {
+                filterSidebar.classList.remove('active');
+            });
+        }
+
+        // Закрытие фильтров при клике вне области
+        document.addEventListener('click', (e) => {
+            if (filterSidebar && filterSidebar.classList.contains('active') &&
+                !filterSidebar.contains(e.target) && 
+                !e.target.closest('#filterToggle')) {
+                filterSidebar.classList.remove('active');
+            }
+        });
+
         const applyFiltersBtn = document.getElementById('applyFilters');
         const resetFiltersBtn = document.getElementById('resetFilters');
 
@@ -238,6 +265,10 @@ class HairShopCatalog {
             applyFiltersBtn.addEventListener('click', () => {
                 this.getFilterValues();
                 this.applyFilters();
+                // Закрываем фильтры на мобильных после применения
+                if (window.innerWidth <= 900) {
+                    filterSidebar.classList.remove('active');
+                }
             });
         }
 
@@ -270,6 +301,7 @@ class HairShopCatalog {
         const lengthValue = document.getElementById('lengthValue');
         const priceValue = document.getElementById('priceValue');
 
+        // Обновление меток текущих значений
         if (lengthMinInput && lengthMaxInput && lengthValue) {
             const lengthMin = parseInt(lengthMinInput.value);
             const lengthMax = parseInt(lengthMaxInput.value);
@@ -291,6 +323,19 @@ class HairShopCatalog {
             }
 
             priceValue.textContent = `${Math.min(priceMin, priceMax)}-${Math.max(priceMin, priceMax)} ₽`;
+        }
+
+        // Обновление минимальных и максимальных меток
+        const lengthMinLabel = document.getElementById('lengthMinLabel');
+        const lengthMaxLabel = document.getElementById('lengthMaxLabel');
+        const priceMinLabel = document.getElementById('priceMinLabel');
+        const priceMaxLabel = document.getElementById('priceMaxLabel');
+
+        if (this.filterRanges) {
+            if (lengthMinLabel) lengthMinLabel.textContent = `${this.filterRanges.length.min} см`;
+            if (lengthMaxLabel) lengthMaxLabel.textContent = `${this.filterRanges.length.max} см`;
+            if (priceMinLabel) priceMinLabel.textContent = `${this.filterRanges.price.min} ₽`;
+            if (priceMaxLabel) priceMaxLabel.textContent = `${this.filterRanges.price.max} ₽`;
         }
     }
 
@@ -350,7 +395,10 @@ class HairShopCatalog {
         return `
             <div class="product-card" data-id="${product.id}">
                 <div class="product-image ${imageClass}">
-                    ${imageUrl ? `<img src="${imageUrl}" alt="${product.name}" onerror="this.style.display='none'">` : ''}
+                    ${imageUrl ? 
+                        `<img src="${imageUrl}" alt="${product.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image');">` : 
+                        '📷 Нет фото'
+                    }
                 </div>
                 <div class="product-info">
                     <h3>${product.name}</h3>

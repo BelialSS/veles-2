@@ -17,6 +17,7 @@ body {
 /* Изменяем заголовок h1 */
 .main-header h1 {
     color: #ffc400; 
+    margin: 0;
 }
 
 .main-content {
@@ -24,6 +25,34 @@ body {
     max-width: 1400px;
     margin: 20px auto;
     padding: 0 20px;
+    position: relative;
+}
+
+/* Стили для кнопки переключения фильтров */
+.filter-toggle {
+    display: none;
+    position: fixed;
+    top: 90px;
+    left: 20px;
+    z-index: 1001;
+}
+
+.btn-filter-toggle {
+    background: #ffc400;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 25px;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(255, 204, 0, 0.3);
+    transition: all 0.3s ease;
+    color: #000;
+    font-weight: 600;
+}
+
+.btn-filter-toggle:hover {
+    background: #ffeb3b;
+    transform: translateY(-2px);
 }
 
 /* Стили для фильтров (сайдбар) */
@@ -31,6 +60,7 @@ body {
     width: 300px;
     flex-shrink: 0;
     margin-right: 25px;
+    transition: transform 0.3s ease;
 }
 
 .filter-section {
@@ -42,18 +72,44 @@ body {
     top: 20px;
 }
 
+.filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #333;
+}
+
+.filter-header h3 {
+    color: #ffc400;
+    margin: 0;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #ffc400;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.3s;
+}
+
+.btn-close:hover {
+    background: #333;
+}
+
 .filter-group {
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid #333; /* Более темный разделитель */
-}
-
-.filter-section h3 {
-    color: #ffc400; /* Золотой для заголовка */
-    margin-top: 0;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #333;
-    margin-bottom: 20px;
 }
 
 .filter-group label {
@@ -64,15 +120,20 @@ body {
 }
 
 /* Стили для кнопок */
+.filter-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
 .btn-primary, .btn-secondary {
-    padding: 10px 15px;
+    padding: 12px 15px;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
     transition: background-color 0.3s, transform 0.1s;
     border: none;
-    width: 100%;
-    margin-top: 10px;
+    font-size: 14px;
 }
 
 .btn-primary {
@@ -111,6 +172,7 @@ body {
     border-radius: 5px;
     outline: none;
     -webkit-appearance: none;
+    pointer-events: none;
 }
 
 .slider::-webkit-slider-thumb {
@@ -122,6 +184,30 @@ body {
     cursor: pointer;
     border: 3px solid #1e1e1e; /* Темная рамка */
     box-shadow: 0 2px 5px rgba(255, 204, 0, 0.3);
+    pointer-events: all;
+    position: relative;
+    z-index: 2;
+}
+
+.slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: #ffc400;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid #1e1e1e;
+    box-shadow: 0 2px 5px rgba(255, 204, 0, 0.3);
+    pointer-events: all;
+    position: relative;
+    z-index: 2;
+}
+
+.range-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+    font-size: 12px;
+    color: #aaa;
 }
 
 /* Мультиселект */
@@ -135,9 +221,17 @@ body {
     background-color: #333;
     color: #f0f0f0;
 }
+
 .multi-select option {
     background-color: #333;
     color: #f0f0f0;
+    padding: 5px;
+}
+
+.select-hint {
+    font-size: 11px;
+    color: #888;
+    margin-top: 0.25rem;
 }
 
 /* Каталог и карточки товаров */
@@ -173,12 +267,22 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 3rem;
+    color: #ffc400;
 }
 
 .product-image img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+.product-image.no-image {
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffc400;
+    font-size: 14px;
 }
 
 /* Новый стиль для заглушки-логотипа */
@@ -214,6 +318,7 @@ body {
     font-weight: bold;
     color: #ffc400; /* Золотой */
     margin: 0.75rem 0;
+    display: block;
 }
 
 .product-old-price {
@@ -230,14 +335,34 @@ body {
         padding: 0 10px;
     }
 
-    .filter-sidebar {
-        width: 100%;
-        margin-right: 0;
-        margin-bottom: 20px;
+    .filter-toggle {
+        display: block;
     }
-    
+
+    .filter-sidebar {
+        position: fixed;
+        top: 0;
+        left: -100%;
+        width: 85%;
+        max-width: 350px;
+        height: 100vh;
+        z-index: 1000;
+        background: #1e1e1e;
+        margin: 0;
+        border-radius: 0;
+        transition: left 0.3s ease;
+        overflow-y: auto;
+    }
+
+    .filter-sidebar.active {
+        left: 0;
+    }
+
     .filter-section {
         position: static;
+        box-shadow: none;
+        border-radius: 0;
+        height: 100%;
     }
 
     /* !!! ИЗМЕНЕНИЕ ДЛЯ ПРИНУДИТЕЛЬНЫХ ДВУХ КОЛОНОК НА МОБИЛЬНЫХ !!! */
@@ -245,5 +370,20 @@ body {
     .products-container {
         grid-template-columns: repeat(2, 1fr); /* 2 колонки одинаковой ширины */
         gap: 15px; /* Уменьшаем отступ для узких экранов */
+    }
+}
+
+@media (max-width: 480px) {
+    .products-container {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .main-header {
+        padding: 1rem;
+    }
+    
+    .main-header h1 {
+        font-size: 1.5rem;
     }
 }
