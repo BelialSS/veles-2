@@ -10,14 +10,80 @@ body {
 .main-header {
     background-color: #000000; /* Черный фон для хедера */
     color: #ffc400; /* Золотой акцент для текста */
-    padding: 1.5rem 2rem;
+    padding: 1rem 2rem;
     box-shadow: 0 4px 10px rgba(255, 204, 0, 0.2); /* Золотая тень */
 }
 
-/* Изменяем заголовок h1 */
-.main-header h1 {
-    color: #ffc400; 
+/* Новая верхняя панель */
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+}
+
+.header-top h1 {
+    color: #ffc400;
     margin: 0;
+    font-size: 1.5rem;
+    text-align: center;
+    flex: 1;
+}
+
+.header-left,
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 80px; /* Фиксированная ширина для выравнивания */
+}
+
+.header-right {
+    justify-content: flex-end;
+}
+
+/* Стили для иконок в хедере */
+.header-icon-btn {
+    background: #ffc400;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    position: relative;
+    color: #000;
+}
+
+.header-icon-btn:hover {
+    background: #ffeb3b;
+    transform: scale(1.1);
+}
+
+/* Счетчик корзины */
+.cart-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #ff4444;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+/* Кнопка фильтра в хедере */
+.filter-btn {
+    font-size: 1.1rem;
 }
 
 .main-content {
@@ -28,31 +94,9 @@ body {
     position: relative;
 }
 
-/* Стили для кнопки переключения фильтров */
+/* Убираем старую кнопку переключения фильтров */
 .filter-toggle {
     display: none;
-    position: fixed;
-    top: 90px;
-    left: 20px;
-    z-index: 1001;
-}
-
-.btn-filter-toggle {
-    background: #ffc400;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 25px;
-    font-size: 14px;
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(255, 204, 0, 0.3);
-    transition: all 0.3s ease;
-    color: #000;
-    font-weight: 600;
-}
-
-.btn-filter-toggle:hover {
-    background: #ffeb3b;
-    transform: translateY(-2px);
 }
 
 /* Стили для фильтров (сайдбар) */
@@ -285,14 +329,6 @@ body {
     font-size: 14px;
 }
 
-/* Новый стиль для заглушки-логотипа */
-.logo-placeholder {
-    width: 100%;
-    height: 100%;
-    padding: 20px;
-    object-fit: contain; /* Логотип полностью виден */
-}
-
 .product-info {
     padding: 1rem 1.2rem;
 }
@@ -335,8 +371,14 @@ body {
         padding: 0 10px;
     }
 
-    .filter-toggle {
-        display: block;
+    .header-top h1 {
+        font-size: 1.3rem;
+    }
+
+    .header-icon-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
     }
 
     .filter-sidebar {
@@ -380,10 +422,27 @@ body {
     }
     
     .main-header {
-        padding: 1rem;
+        padding: 0.8rem 1rem;
     }
     
-    .main-header h1 {
-        font-size: 1.5rem;
+    .header-top h1 {
+        font-size: 1.1rem;
+    }
+    
+    .header-left,
+    .header-right {
+        width: 60px;
+    }
+    
+    .header-icon-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+    }
+    
+    .cart-count {
+        width: 16px;
+        height: 16px;
+        font-size: 0.6rem;
     }
 }

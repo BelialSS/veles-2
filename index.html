@@ -8,16 +8,25 @@
 </head>
 <body>
     <header class="main-header">
-        <h1>Каталог Волос 🛍️</h1>
+        <div class="header-top">
+            <div class="header-left">
+                <button id="profileBtn" class="header-icon-btn">
+                    👤
+                </button>
+            </div>
+            <h1>Каталог Волос 🛍️</h1>
+            <div class="header-right">
+                <button id="cartBtn" class="header-icon-btn">
+                    🛒
+                    <span id="cartCount" class="cart-count">0</span>
+                </button>
+                <button id="filterToggle" class="header-icon-btn filter-btn">
+                    ⚙️
+                </button>
+            </div>
+        </div>
     </header>
     <div class="main-content">
-        <!-- Кнопка для открытия фильтров на мобильных устройствах -->
-        <div class="filter-toggle">
-            <button id="filterToggle" class="btn-filter-toggle">
-                🔍 Фильтры
-            </button>
-        </div>
-
         <aside class="filter-sidebar" id="filterSidebar">
             <div class="filter-section">
                 <div class="filter-header">

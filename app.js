@@ -17,6 +17,8 @@ class HairShopCatalog {
             colors: []
         };
         
+        this.cart = [];
+        
         this.init();
     }
 
@@ -27,6 +29,7 @@ class HairShopCatalog {
         this.renderLoading();
         await this.loadProductsFromCSV();
         this.setupEventListeners();
+        this.updateCartCount();
         console.log('✅ Catalog ready for Telegram WebApp');
     }
 
@@ -244,6 +247,23 @@ class HairShopCatalog {
                 filterSidebar.classList.remove('active');
             }
         });
+
+        // Кнопка профиля
+        const profileBtn = document.getElementById('profileBtn');
+        if (profileBtn) {
+            profileBtn.addEventListener('click', () => {
+                console.log('👤 Открыть профиль');
+                // Здесь можно добавить функционал профиля
+            });
+        }
+
+        // Кнопка корзины
+        const cartBtn = document.getElementById('cartBtn');
+        if (cartBtn) {
+            cartBtn.addEventListener('click', () => {
+                this.showCart();
+            });
+        }
 
         const applyFiltersBtn = document.getElementById('applyFilters');
         const resetFiltersBtn = document.getElementById('resetFilters');
@@ -475,9 +495,93 @@ class HairShopCatalog {
     addToCart(productId) {
         const product = this.products.find(p => p.id == productId);
         if (product) {
+            // Проверяем, есть ли товар уже в корзине
+            const existingItem = this.cart.find(item => item.id == productId);
+            
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                this.cart.push({
+                    ...product,
+                    quantity: 1
+                });
+            }
+            
+            this.updateCartCount();
             console.log(`🛒 Товар "${product.name}" добавлен в корзину!`);
-            // Здесь можно добавить логику для реальной корзины
+            
+            // Показываем уведомление
+            this.showNotification(`Товар "${product.name}" добавлен в корзину!`);
         }
+    }
+
+    /**
+     * Обновляет счетчик корзины
+     */
+    updateCartCount() {
+        const cartCount = document.getElementById('cartCount');
+        if (cartCount) {
+            const totalItems = this.cart.reduce((sum, item) => sum + item.quantity, 0);
+            cartCount.textContent = totalItems;
+            cartCount.style.display = totalItems > 0 ? 'flex' : 'none';
+        }
+    }
+
+    /**
+     * Показывает корзину
+     */
+    showCart() {
+        if (this.cart.length === 0) {
+            alert('🛒 Корзина пуста');
+            return;
+        }
+
+        const total = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const cartItems = this.cart.map(item => 
+            `• ${item.name} - ${item.quantity} × ${item.price.toLocaleString()} ₽ = ${(item.price * item.quantity).toLocaleString()} ₽`
+        ).join('\n');
+
+        alert(`🛒 Ваша корзина:\n\n${cartItems}\n\n💎 Итого: ${total.toLocaleString()} ₽`);
+    }
+
+    /**
+     * Показывает уведомление
+     */
+    showNotification(message) {
+        // Создаем элемент уведомления
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ffc400;
+            color: #000;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(255, 204, 0, 0.3);
+            z-index: 10000;
+            font-weight: 600;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        `;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Анимация появления
+        setTimeout(() => {
+            notification.style.transform = 'translateX(0)';
+        }, 100);
+        
+        // Автоматическое скрытие через 3 секунды
+        setTimeout(() => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
     }
 }
 
