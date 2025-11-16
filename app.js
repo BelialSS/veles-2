@@ -18,8 +18,8 @@ class HairShopCatalog {
             colors: []
         };
         
-        // **ИСПРАВЛЕНО:** Используем новое, переименованное имя файла.
-        this.PLACEHOLDER_LOGO = 'veles-logo.jpeg'; 
+        // УДАЛЕНО: this.PLACEHOLDER_LOGO = 'veles-logo.jpeg'; 
+        // Теперь при отсутствии изображения будет использоваться CSS-заглушка.
 
         this.init();
     }
@@ -160,22 +160,31 @@ class HairShopCatalog {
 
         if (this.filterRanges) {
             // Длина
-            lengthMinInput.min = lengthMaxInput.min = this.filterRanges.length.min;
-            lengthMinInput.max = lengthMaxInput.max = this.filterRanges.length.max;
-            lengthMinInput.value = this.filters.minLength;
-            lengthMaxInput.value = this.filters.maxLength;
+            if (lengthMinInput && lengthMaxInput) {
+                lengthMinInput.min = lengthMaxInput.min = this.filterRanges.length.min;
+                lengthMinInput.max = lengthMaxInput.max = this.filterRanges.length.max;
+                lengthMinInput.value = this.filters.minLength;
+                lengthMaxInput.value = this.filters.maxLength;
+            }
 
             // Цена
-            priceMinInput.min = priceMaxInput.min = this.filterRanges.price.min;
-            priceMinInput.max = priceMaxInput.max = this.filterRanges.price.max;
-            priceMinInput.value = this.filters.minPrice;
-            priceMaxInput.value = this.filters.maxPrice;
+            if (priceMinInput && priceMaxInput) {
+                priceMinInput.min = priceMaxInput.min = this.filterRanges.price.min;
+                priceMinInput.max = priceMaxInput.max = this.filterRanges.price.max;
+                priceMinInput.value = this.filters.minPrice;
+                priceMaxInput.value = this.filters.maxPrice;
+            }
 
-            // Обновляем метки (label) в HTML
-            document.querySelector('.filter-group:nth-child(1) .range-labels span:first-child').textContent = `${this.filterRanges.length.min} см`;
-            document.querySelector('.filter-group:nth-child(1) .range-labels span:last-child').textContent = `${this.filterRanges.length.max} см`;
-            document.querySelector('.filter-group:nth-child(2) .range-labels span:first-child').textContent = `${this.filterRanges.price.min} ₽`;
-            document.querySelector('.filter-group:nth-child(2) .range-labels span:last-child').textContent = `${this.filterRanges.price.max} ₽`;
+            // Обновляем метки (label) в HTML - ИСПРАВЛЕНИЕ: Добавлена проверка на null
+            const lengthMinLabel = document.querySelector('.filter-group:nth-child(1) .range-labels span:first-child');
+            const lengthMaxLabel = document.querySelector('.filter-group:nth-child(1) .range-labels span:last-child');
+            const priceMinLabel = document.querySelector('.filter-group:nth-child(2) .range-labels span:first-child');
+            const priceMaxLabel = document.querySelector('.filter-group:nth-child(2) .range-labels span:last-child');
+
+            if (lengthMinLabel) lengthMinLabel.textContent = `${this.filterRanges.length.min} см`;
+            if (lengthMaxLabel) lengthMaxLabel.textContent = `${this.filterRanges.length.max} см`;
+            if (priceMinLabel) priceMinLabel.textContent = `${this.filterRanges.price.min} ₽`;
+            if (priceMaxLabel) priceMaxLabel.textContent = `${this.filterRanges.price.max} ₽`;
             
             this.updateRangeLabels();
         }
@@ -208,7 +217,9 @@ class HairShopCatalog {
 
         // События для обновления значений при движении ползунков
         [lengthMinInput, lengthMaxInput, priceMinInput, priceMaxInput].forEach(input => {
-            input.addEventListener('input', () => this.updateRangeLabels());
+            if (input) {
+                input.addEventListener('input', () => this.updateRangeLabels());
+            }
         });
 
         // Событие для кнопки "Применить фильтры"
@@ -247,17 +258,32 @@ class HairShopCatalog {
      * Обновляет текстовые метки для текущих значений ползунков.
      */
     updateRangeLabels() {
-        const lengthMin = parseInt(document.getElementById('lengthMin').value);
-        const lengthMax = parseInt(document.getElementById('lengthMax').value);
-        const priceMin = parseInt(document.getElementById('priceMin').value);
-        const priceMax = parseInt(document.getElementById('priceMax').value);
+        const lengthMinInput = document.getElementById('lengthMin');
+        const lengthMaxInput = document.getElementById('lengthMax');
+        const priceMinInput = document.getElementById('priceMin');
+        const priceMaxInput = document.getElementById('priceMax');
 
-        // Убеждаемся, что min не больше max
-        if (lengthMin > lengthMax) document.getElementById('lengthMin').value = lengthMax;
-        if (priceMin > priceMax) document.getElementById('priceMin').value = priceMax;
+        const lengthValue = document.getElementById('lengthValue');
+        const priceValue = document.getElementById('priceValue');
 
-        document.getElementById('lengthValue').textContent = `${Math.min(lengthMin, lengthMax)}-${Math.max(lengthMin, lengthMax)} см`;
-        document.getElementById('priceValue').textContent = `${Math.min(priceMin, priceMax)}-${Math.max(priceMin, priceMax)} ₽`;
+        if (lengthMinInput && lengthMaxInput && lengthValue) {
+            const lengthMin = parseInt(lengthMinInput.value);
+            const lengthMax = parseInt(lengthMaxInput.value);
+
+            // Убеждаемся, что min не больше max
+            if (lengthMin > lengthMax) lengthMinInput.value = lengthMax;
+
+            lengthValue.textContent = `${Math.min(lengthMin, lengthMax)}-${Math.max(lengthMin, lengthMax)} см`;
+        }
+
+        if (priceMinInput && priceMaxInput && priceValue) {
+            const priceMin = parseInt(priceMinInput.value);
+            const priceMax = parseInt(priceMaxInput.value);
+
+            if (priceMin > priceMax) priceMinInput.value = priceMax;
+
+            priceValue.textContent = `${Math.min(priceMin, priceMax)}-${Math.max(priceMin, priceMax)} ₽`;
+        }
     }
 
     /**
@@ -270,15 +296,15 @@ class HairShopCatalog {
         const priceMaxInput = document.getElementById('priceMax');
         const colorFilter = document.getElementById('colorFilter');
 
-        const selectedColors = Array.from(colorFilter.options)
+        const selectedColors = colorFilter ? Array.from(colorFilter.options)
                                    .filter(option => option.selected)
-                                   .map(option => option.value);
+                                   .map(option => option.value) : [];
 
         this.filters = {
-            minLength: Math.min(parseInt(lengthMinInput.value), parseInt(lengthMaxInput.value)),
-            maxLength: Math.max(parseInt(lengthMinInput.value), parseInt(lengthMaxInput.value)),
-            minPrice: Math.min(parseInt(priceMinInput.value), parseInt(priceMaxInput.value)),
-            maxPrice: Math.max(parseInt(priceMinInput.value), parseInt(priceMaxInput.value)),
+            minLength: lengthMinInput && lengthMaxInput ? Math.min(parseInt(lengthMinInput.value), parseInt(lengthMaxInput.value)) : this.filters.minLength,
+            maxLength: lengthMinInput && lengthMaxInput ? Math.max(parseInt(lengthMinInput.value), parseInt(lengthMaxInput.value)) : this.filters.maxLength,
+            minPrice: priceMinInput && priceMaxInput ? Math.min(parseInt(priceMinInput.value), parseInt(priceMaxInput.value)) : this.filters.minPrice,
+            maxPrice: priceMinInput && priceMaxInput ? Math.max(parseInt(priceMinInput.value), parseInt(priceMaxInput.value)) : this.filters.maxPrice,
             colors: selectedColors
         };
 
@@ -311,22 +337,20 @@ class HairShopCatalog {
                <span class="product-old-price">${product.oldPrice.toLocaleString()} ₽</span>`
             : `<span class="product-price">${product.price.toLocaleString()} ₽</span>`;
 
-        // **ИСПРАВЛЕНИЕ: Используем константу PLACEHOLDER_LOGO, которая теперь содержит корректное имя файла.**
-        // Устанавливаем заглушку, если product.imageUrl пуст
-        const imageUrl = product.imageUrl && product.imageUrl.trim() !== '' ? product.imageUrl : this.PLACEHOLDER_LOGO;
+        // Если URL пуст, используем пустую строку, чтобы предотвратить загрузку
+        const imageUrl = product.imageUrl && product.imageUrl.trim() !== '' ? product.imageUrl : '';
         
-        // Определяем класс для изображения. Если это логотип-заглушка, используем logo-placeholder
-        const imageClass = imageUrl === this.PLACEHOLDER_LOGO ? 'logo-placeholder' : '';
+        // Добавляем класс 'no-image', если изображение отсутствует. 
+        // В styles.css уже есть background-color, который будет выступать заглушкой.
+        const imageClass = imageUrl === '' ? 'no-image' : ''; 
 
         return `
             <div class="product-card" data-id="${product.id}">
-                <div class="product-image">
-                    <!-- Используем либо изображение товара, либо логотип -->
-                    <!-- onerror: Если изображение не загрузилось, показываем заглушку -->
+                <div class="product-image ${imageClass}">
+                    <!-- Если imageUrl пуст, src будет пустым, и будет видно фоновое заполнение (заглушка) из CSS -->
                     <img src="${imageUrl}" 
                          alt="${product.name}" 
-                         class="${imageClass}"
-                         onerror="this.onerror=null; this.src='${this.PLACEHOLDER_LOGO}'; this.classList.add('logo-placeholder');">
+                         onerror="this.onerror=null; this.style.display='none';">
                 </div>
                 <div class="product-info">
                     <h3>${product.name || 'Название не указано'}</h3>
@@ -382,13 +406,21 @@ class HairShopCatalog {
             };
             
             // Сброс визуальных элементов
-            document.getElementById('colorFilter').selectedIndex = -1; // Сброс выбора цвета
+            const colorFilter = document.getElementById('colorFilter');
+            if (colorFilter) {
+                colorFilter.selectedIndex = -1; // Сброс выбора цвета
+            }
             
             // Применяем новые значения к ползункам и меткам
-            document.getElementById('lengthMin').value = this.filters.minLength;
-            document.getElementById('lengthMax').value = this.filters.maxLength;
-            document.getElementById('priceMin').value = this.filters.minPrice;
-            document.getElementById('priceMax').value = this.filters.maxPrice;
+            const lengthMinInput = document.getElementById('lengthMin');
+            const lengthMaxInput = document.getElementById('lengthMax');
+            const priceMinInput = document.getElementById('priceMin');
+            const priceMaxInput = document.getElementById('priceMax');
+            
+            if (lengthMinInput) lengthMinInput.value = this.filters.minLength;
+            if (lengthMaxInput) lengthMaxInput.value = this.filters.maxLength;
+            if (priceMinInput) priceMinInput.value = this.filters.minPrice;
+            if (priceMaxInput) priceMaxInput.value = this.filters.maxPrice;
             
             this.updateRangeLabels();
             this.applyFilters();
