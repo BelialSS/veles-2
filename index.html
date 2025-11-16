@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Каталог Hair Shop</title>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -117,74 +117,180 @@
         </div>
     </div>
 
-    <!-- Экран избранного -->
-    <div id="favoritesScreen" class="screen">
+    <!-- Экран оформления заказа -->
+    <div id="checkoutScreen" class="screen">
         <header class="main-header">
             <div class="header-top">
                 <div class="header-left">
-                    <button id="backFromFavorites" class="header-icon-btn">
+                    <button id="backFromCheckout" class="header-icon-btn">
                         ←
                     </button>
                 </div>
-                <h1>❤️ Избранное</h1>
+                <h1>📦 Оформление заказа</h1>
                 <div class="header-right">
                     <div class="header-placeholder"></div>
                 </div>
             </div>
         </header>
-        <div class="favorites-content">
-            <div id="favoritesContainer" class="products-container">
-                <!-- Избранные товары будут здесь -->
+        <div class="checkout-content">
+            <!-- Способ получения -->
+            <div class="delivery-section">
+                <div class="section-title">🚚 Способ получения</div>
+                <div class="delivery-options">
+                    <label class="delivery-option">
+                        <input type="radio" name="delivery" value="pickup" checked>
+                        <span class="checkmark"></span>
+                        <span class="option-text">
+                            <strong>Самовывоз</strong>
+                            <small>Заберете из нашего магазина</small>
+                        </span>
+                    </label>
+                    <label class="delivery-option">
+                        <input type="radio" name="delivery" value="delivery">
+                        <span class="checkmark"></span>
+                        <span class="option-text">
+                            <strong>Доставка</strong>
+                            <small>Доставим курьером или транспортной компанией</small>
+                        </span>
+                    </label>
+                </div>
+                
+                <!-- Блок выбора адреса -->
+                <div id="addressSection" class="address-section" style="display: none;">
+                    <div class="section-subtitle">Адрес доставки</div>
+                    <div id="selectedAddress" class="selected-address empty">
+                        Адрес не выбран
+                    </div>
+                    <button type="button" id="selectAddressBtn" class="btn-secondary">
+                        🏠 Выбрать адрес доставки
+                    </button>
+                </div>
+            </div>
+
+            <!-- Товары в заказе -->
+            <div class="order-items-section">
+                <div class="section-title">🛍️ Товары в заказе</div>
+                <div id="orderItems" class="order-items">
+                    <!-- Товары будут здесь -->
+                </div>
+                <div class="order-total">
+                    <div class="total-line">
+                        <span>Итого:</span>
+                        <span id="checkoutTotalAmount">0 ₽</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Способ оплаты -->
+            <div class="payment-section">
+                <div class="section-title">💳 Способ оплаты</div>
+                <div class="payment-options">
+                    <label class="payment-option">
+                        <input type="radio" name="payment" value="cash" checked>
+                        <span class="checkmark"></span>
+                        <span class="option-text">
+                            <strong>Наличными</strong>
+                            <small>При получении заказа</small>
+                        </span>
+                    </label>
+                    <label class="payment-option">
+                        <input type="radio" name="payment" value="card">
+                        <span class="checkmark"></span>
+                        <span class="option-text">
+                            <strong>Перевод на карту</strong>
+                            <small>Банковский перевод</small>
+                        </span>
+                    </label>
+                    <label class="payment-option">
+                        <input type="radio" name="payment" value="online">
+                        <span class="checkmark"></span>
+                        <span class="option-text">
+                            <strong>Онлайн оплата</strong>
+                            <small>Картой онлайн</small>
+                        </span>
+                    </label>
+                    <label class="payment-option">
+                        <input type="radio" name="payment" value="sbp">
+                        <span class="checkmark"></span>
+                        <span class="option-text">
+                            <strong>СБП</strong>
+                            <small>Система быстрых платежей</small>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Кнопка оформления -->
+            <div class="checkout-actions">
+                <button id="confirmOrderBtn" class="btn-primary confirm-order-btn">
+                    📦 Подтвердить заказ
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Экран профиля -->
-    <div id="profileScreen" class="screen">
-        <header class="main-header">
-            <div class="header-top">
-                <div class="header-left">
-                    <button id="backFromProfile" class="header-icon-btn">
-                        ←
-                    </button>
-                </div>
-                <h1>👤 Профиль</h1>
-                <div class="header-right">
-                    <div class="header-placeholder"></div>
-                </div>
+    <!-- Модальное окно выбора адреса доставки -->
+    <div id="addressModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🏠 Выберите адрес доставки</h3>
+                <button class="modal-close">&times;</button>
             </div>
-        </header>
-        <div class="profile-content">
-            <div class="profile-info">
-                <div class="profile-avatar">
-                    <img id="profilePhoto" src="" alt="Аватар" onerror="this.style.display='none'">
-                    <div id="profileInitials" class="profile-initials"></div>
+            <div class="modal-body">
+                <div id="savedAddresses" class="addresses-list">
+                    <!-- Сохраненные адреса будут здесь -->
                 </div>
-                <div class="profile-details">
-                    <h2 id="profileName">Пользователь</h2>
-                    <a id="profileUsername" href="#" class="profile-link">@username</a>
-                </div>
+                <button id="addNewAddressBtn" class="btn-primary" style="width: 100%; margin-top: 15px;">
+                    ＋ Добавить новый адрес
+                </button>
             </div>
-            
-            <div class="profile-tabs">
-                <button class="tab-btn active" data-tab="purchases">Мои покупки</button>
-                <button class="tab-btn" data-tab="favorites">Избранное</button>
+        </div>
+    </div>
+
+    <!-- Модальное окно добавления нового адреса -->
+    <div id="newAddressModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🏠 Новый адрес доставки</h3>
+                <button class="modal-close">&times;</button>
             </div>
-            
-            <div class="tab-content">
-                <div id="purchasesTab" class="tab-pane active">
-                    <div class="purchases-list">
-                        <!-- История покупок будет здесь -->
-                        <div class="empty-state">
-                            📦 У вас пока нет покупок
+            <div class="modal-body">
+                <form id="newAddressForm" class="address-form">
+                    <div class="form-group">
+                        <label for="city">Город *</label>
+                        <input type="text" id="city" name="city" required placeholder="Введите город">
+                    </div>
+                    <div class="form-group">
+                        <label for="street">Улица *</label>
+                        <input type="text" id="street" name="street" required placeholder="Введите улицу">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="house">Дом *</label>
+                            <input type="text" id="house" name="house" required placeholder="Номер дома">
+                        </div>
+                        <div class="form-group">
+                            <label for="apartment">Квартира</label>
+                            <input type="text" id="apartment" name="apartment" placeholder="Номер квартиры">
                         </div>
                     </div>
-                </div>
-                <div id="favoritesTab" class="tab-pane">
-                    <div id="profileFavorites" class="products-container">
-                        <!-- Избранные товары в профиле -->
+                    <div class="form-group">
+                        <label for="deliveryCompany">Транспортная компания *</label>
+                        <select id="deliveryCompany" name="deliveryCompany" required>
+                            <option value="">Выберите компанию</option>
+                            <option value="cdek">СДЭК</option>
+                            <option value="boxberry">Boxberry</option>
+                            <option value="russian_post">Почта России</option>
+                            <option value="dhl">DHL</option>
+                            <option value="dpd">DPD</option>
+                            <option value="yandex">Яндекс Доставка</option>
+                        </select>
                     </div>
-                </div>
+                    <div class="form-actions">
+                        <button type="button" id="cancelAddressBtn" class="btn-secondary">Отмена</button>
+                        <button type="submit" class="btn-primary">Сохранить адрес</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
