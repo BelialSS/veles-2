@@ -80,7 +80,7 @@ body {
     transform: scale(1.1);
 }
 
-/* Счетчик корзины */
+/* Счетчик корзины и избранного */
 .cart-count {
     position: absolute;
     top: -5px;
@@ -112,7 +112,9 @@ body {
 }
 
 /* Стили для корзины */
-.cart-content {
+.cart-content,
+.favorites-content,
+.profile-content {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -206,6 +208,11 @@ body {
     cursor: pointer;
     color: #000;
     font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.quantity-btn:active {
+    transform: scale(0.9);
 }
 
 .quantity {
@@ -259,11 +266,96 @@ body {
     flex-shrink: 0;
 }
 
-.empty-cart {
+.empty-cart,
+.empty-state {
     text-align: center;
     padding: 50px 20px;
     color: #ffc400;
     font-size: 1.2rem;
+}
+
+/* Стили для профиля */
+.profile-info {
+    display: flex;
+    align-items: center;
+    background: #1e1e1e;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #333;
+}
+
+.profile-avatar {
+    position: relative;
+    margin-right: 20px;
+}
+
+.profile-avatar img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.profile-initials {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #ffc400;
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.profile-details h2 {
+    margin: 0 0 5px 0;
+    color: #ffc400;
+}
+
+.profile-link {
+    color: #ffc400;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.profile-link:hover {
+    text-decoration: underline;
+}
+
+.profile-tabs {
+    display: flex;
+    background: #1e1e1e;
+    border-radius: 12px;
+    padding: 5px;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    background: transparent;
+    color: #aaa;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.tab-btn.active {
+    background: #ffc400;
+    color: #000;
+    font-weight: bold;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
 }
 
 /* Стили для фильтров (сайдбар) */
@@ -468,6 +560,7 @@ body {
     overflow: hidden;
     transition: transform 0.3s, box-shadow 0.3s;
     background: #1e1e1e; /* Темный фон карточки */
+    position: relative;
 }
 
 .product-card:hover {
@@ -484,6 +577,7 @@ body {
     justify-content: center;
     font-size: 3rem;
     color: #ffc400;
+    position: relative;
 }
 
 .product-image img {
@@ -499,6 +593,34 @@ body {
     justify-content: center;
     color: #ffc400;
     font-size: 14px;
+}
+
+/* Значок избранного на карточке */
+.favorite-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    border: none;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    z-index: 2;
+}
+
+.favorite-btn.active {
+    background: #ff4444;
+    color: white;
+}
+
+.favorite-btn:hover {
+    transform: scale(1.1);
 }
 
 .product-info {
@@ -536,6 +658,42 @@ body {
     margin-left: 0.5rem;
 }
 
+/* Управление количеством в каталоге */
+.catalog-quantity-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.catalog-quantity-btn {
+    background: #ffc400;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #000;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.catalog-quantity-btn:active {
+    transform: scale(0.9);
+}
+
+.catalog-quantity {
+    color: #fff;
+    font-weight: 600;
+    min-width: 30px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
 /* Адаптивность для узких экранов (мобильные устройства) */
 @media (max-width: 900px) {
     .main-content {
@@ -551,6 +709,10 @@ body {
         width: 35px;
         height: 35px;
         font-size: 1rem;
+    }
+
+    .header-right {
+        gap: 5px;
     }
 
     .filter-sidebar {
@@ -592,11 +754,22 @@ body {
         font-size: 1rem;
     }
 
-    /* !!! ИЗМЕНЕНИЕ ДЛЯ ПРИНУДИТЕЛЬНЫХ ДВУХ КОЛОНОК НА МОБИЛЬНЫХ !!! */
-    /* Применяется на экранах до 900px (включая вертикальный и горизонтальный мобильный) */
+    /* 2 КОЛОНКИ НА МОБИЛЬНЫХ */
     .products-container {
-        grid-template-columns: repeat(2, 1fr); /* 2 колонки одинаковой ширины */
-        gap: 15px; /* Уменьшаем отступ для узких экранов */
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+
+    .product-card {
+        margin-bottom: 0;
+    }
+
+    .product-info h3 {
+        font-size: 1rem;
+    }
+
+    .product-price {
+        font-size: 1.3rem;
     }
 }
 
@@ -657,5 +830,15 @@ body {
 
     .checkout-btn {
         width: 100%;
+    }
+
+    .profile-info {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .profile-avatar {
+        margin-right: 0;
+        margin-bottom: 15px;
     }
 }

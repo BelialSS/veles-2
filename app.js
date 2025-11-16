@@ -18,6 +18,8 @@ class HairShopCatalog {
         };
         
         this.cart = [];
+        this.favorites = [];
+        this.purchases = [];
         this.telegramUser = null;
         
         this.init();
@@ -32,6 +34,7 @@ class HairShopCatalog {
         await this.loadProductsFromCSV();
         this.setupEventListeners();
         this.updateCartCount();
+        this.updateFavoritesCount();
         console.log('✅ Catalog ready for Telegram WebApp');
     }
 
@@ -46,30 +49,15 @@ class HairShopCatalog {
             
             console.log('✅ Telegram WebApp initialized');
             console.log('👤 User:', this.telegramUser);
-            
-            // Обновляем информацию профиля
-            this.updateProfileInfo();
         } else {
             console.log('⚠️ Telegram WebApp not detected, running in browser mode');
             // Заглушка для тестирования в браузере
             this.telegramUser = {
                 first_name: 'Тестовый',
                 last_name: 'Пользователь',
-                username: 'test_user'
+                username: 'test_user',
+                photo_url: ''
             };
-        }
-    }
-
-    /**
-     * Обновляет информацию профиля
-     */
-    updateProfileInfo() {
-        const profileBtn = document.getElementById('profileBtn');
-        if (profileBtn && this.telegramUser) {
-            // Можно добавить аватар или другую информацию
-            if (this.telegramUser.first_name) {
-                profileBtn.title = `${this.telegramUser.first_name} ${this.telegramUser.last_name || ''}`.trim();
-            }
         }
     }
 
@@ -292,7 +280,7 @@ class HairShopCatalog {
         const profileBtn = document.getElementById('profileBtn');
         if (profileBtn) {
             profileBtn.addEventListener('click', () => {
-                this.showProfile();
+                this.showProfileScreen();
             });
         }
 
@@ -304,13 +292,22 @@ class HairShopCatalog {
             });
         }
 
-        // Кнопка назад из корзины
-        const backFromCart = document.getElementById('backFromCart');
-        if (backFromCart) {
-            backFromCart.addEventListener('click', () => {
-                this.showCatalogScreen();
+        // Кнопка избранного
+        const favoritesBtn = document.getElementById('favoritesBtn');
+        if (favoritesBtn) {
+            favoritesBtn.addEventListener('click', () => {
+                this.showFavoritesScreen();
             });
         }
+
+        // Кнопки назад
+        const backFromCart = document.getElementById('backFromCart');
+        const backFromFavorites = document.getElementById('backFromFavorites');
+        const backFromProfile = document.getElementById('backFromProfile');
+
+        if (backFromCart) backFromCart.addEventListener('click', () => this.showCatalogScreen());
+        if (backFromFavorites) backFromFavorites.addEventListener('click', () => this.showCatalogScreen());
+        if (backFromProfile) backFromProfile.addEventListener('click', () => this.showCatalogScreen());
 
         // Кнопка оформления заказа
         const checkoutBtn = document.getElementById('checkoutBtn');
@@ -319,6 +316,15 @@ class HairShopCatalog {
                 this.checkout();
             });
         }
+
+        // Вкладки профиля
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.getAttribute('data-tab');
+                this.switchProfileTab(tab);
+            });
+        });
 
         const applyFiltersBtn = document.getElementById('applyFilters');
         const resetFiltersBtn = document.getElementById('resetFilters');
@@ -352,14 +358,20 @@ class HairShopCatalog {
             resetFiltersBtn.addEventListener('click', () => this.resetFilters());
         }
 
-        // Событие для добавления в корзину (используем делегирование)
+        // Событие для добавления в корзину и избранное (используем делегирование)
         const productsContainer = document.getElementById('productsContainer');
         if (productsContainer) {
             productsContainer.addEventListener('click', (e) => {
-                if (e.target.classList.contains('add-to-cart') || 
-                    e.target.classList.contains('remove-from-cart')) {
+                if (e.target.classList.contains('add-to-cart')) {
                     const productId = e.target.getAttribute('data-id');
-                    this.toggleCart(productId);
+                    this.addToCart(productId);
+                } else if (e.target.classList.contains('favorite-btn')) {
+                    const productId = e.target.getAttribute('data-id');
+                    this.toggleFavorite(productId);
+                } else if (e.target.classList.contains('catalog-quantity-btn')) {
+                    const productId = e.target.getAttribute('data-id');
+                    const action = e.target.classList.contains('increase-btn') ? 'increase' : 'decrease';
+                    this.updateCartQuantity(productId, action);
                 }
             });
         }
@@ -371,12 +383,53 @@ class HairShopCatalog {
     showCatalogScreen() {
         document.getElementById('catalogScreen').classList.add('active');
         document.getElementById('cartScreen').classList.remove('active');
+        document.getElementById('favoritesScreen').classList.remove('active');
+        document.getElementById('profileScreen').classList.remove('active');
     }
 
     showCartScreen() {
         document.getElementById('catalogScreen').classList.remove('active');
         document.getElementById('cartScreen').classList.add('active');
+        document.getElementById('favoritesScreen').classList.remove('active');
+        document.getElementById('profileScreen').classList.remove('active');
         this.renderCart();
+    }
+
+    showFavoritesScreen() {
+        document.getElementById('catalogScreen').classList.remove('active');
+        document.getElementById('cartScreen').classList.remove('active');
+        document.getElementById('favoritesScreen').classList.add('active');
+        document.getElementById('profileScreen').classList.remove('active');
+        this.renderFavorites();
+    }
+
+    showProfileScreen() {
+        document.getElementById('catalogScreen').classList.remove('active');
+        document.getElementById('cartScreen').classList.remove('active');
+        document.getElementById('favoritesScreen').classList.remove('active');
+        document.getElementById('profileScreen').classList.add('active');
+        this.renderProfile();
+    }
+
+    /**
+     * Переключение вкладок профиля
+     */
+    switchProfileTab(tab) {
+        // Обновляем активные кнопки
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+
+        // Обновляем активные панели
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.classList.remove('active');
+        });
+        document.getElementById(`${tab}Tab`).classList.add('active');
+
+        if (tab === 'favorites') {
+            this.renderProfileFavorites();
+        }
     }
 
     /**
@@ -483,8 +536,9 @@ class HairShopCatalog {
         const imageClass = imageUrl === '' ? 'no-image' : '';
 
         const isInCart = this.cart.some(item => item.id == product.id);
-        const buttonText = isInCart ? 'В корзине' : 'Добавить в корзину';
-        const buttonClass = isInCart ? 'btn-primary btn-in-cart remove-from-cart' : 'btn-primary add-to-cart';
+        const cartItem = this.cart.find(item => item.id == product.id);
+        const quantity = cartItem ? cartItem.quantity : 0;
+        const isFavorite = this.favorites.some(item => item.id == product.id);
 
         return `
             <div class="product-card" data-id="${product.id}">
@@ -493,6 +547,9 @@ class HairShopCatalog {
                         `<img src="${imageUrl}" alt="${product.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image');">` : 
                         '📷 Нет фото'
                     }
+                    <button class="favorite-btn ${isFavorite ? 'active' : ''}" data-id="${product.id}">
+                        ${isFavorite ? '❤️' : '🤍'}
+                    </button>
                 </div>
                 <div class="product-info">
                     <h3>${product.name}</h3>
@@ -501,9 +558,17 @@ class HairShopCatalog {
                         <span>Цвет: ${product.color}</span>
                     </div>
                     ${priceDisplay}
-                    <button class="${buttonClass}" data-id="${product.id}">
-                        ${buttonText}
-                    </button>
+                    ${isInCart ? `
+                        <div class="catalog-quantity-controls">
+                            <button class="catalog-quantity-btn decrease-btn" data-id="${product.id}">-</button>
+                            <span class="catalog-quantity">${quantity}</span>
+                            <button class="catalog-quantity-btn increase-btn" data-id="${product.id}">+</button>
+                        </div>
+                    ` : `
+                        <button class="btn-primary add-to-cart" data-id="${product.id}">
+                            Добавить в корзину
+                        </button>
+                    `}
                 </div>
             </div>
         `;
@@ -564,28 +629,39 @@ class HairShopCatalog {
     }
 
     /**
-     * Переключение товара в корзине
+     * Добавление товара в корзину
      */
-    toggleCart(productId) {
+    addToCart(productId) {
         const product = this.products.find(p => p.id == productId);
         if (product) {
-            const existingIndex = this.cart.findIndex(item => item.id == productId);
-            
-            if (existingIndex > -1) {
-                // Удаляем из корзины
-                this.cart.splice(existingIndex, 1);
-                this.showNotification(`Товар "${product.name}" удален из корзины`);
-            } else {
-                // Добавляем в корзину
-                this.cart.push({
-                    ...product,
-                    quantity: 1
-                });
-                this.showNotification(`Товар "${product.name}" добавлен в корзину!`);
-            }
-            
+            this.cart.push({
+                ...product,
+                quantity: 1
+            });
             this.updateCartCount();
-            this.updateProductButton(productId);
+            this.updateProductCard(productId);
+            this.showNotification(`Товар "${product.name}" добавлен в корзину!`);
+        }
+    }
+
+    /**
+     * Обновление количества товара в корзине
+     */
+    updateCartQuantity(productId, action) {
+        const cartItem = this.cart.find(item => item.id == productId);
+        if (cartItem) {
+            if (action === 'increase') {
+                cartItem.quantity += 1;
+            } else if (action === 'decrease') {
+                if (cartItem.quantity > 1) {
+                    cartItem.quantity -= 1;
+                } else {
+                    this.removeFromCart(productId);
+                    return;
+                }
+            }
+            this.updateCartCount();
+            this.updateProductCard(productId);
             
             // Если мы на экране корзины, обновляем его
             if (document.getElementById('cartScreen').classList.contains('active')) {
@@ -595,22 +671,32 @@ class HairShopCatalog {
     }
 
     /**
-     * Обновляет кнопку товара
+     * Удаляет товар из корзины
      */
-    updateProductButton(productId) {
-        const productCard = document.querySelector(`.product-card[data-id="${productId}"]`);
-        if (productCard) {
-            const button = productCard.querySelector('button');
-            const isInCart = this.cart.some(item => item.id == productId);
-            
-            if (isInCart) {
-                button.textContent = 'В корзине';
-                button.className = 'btn-primary btn-in-cart remove-from-cart';
-                button.setAttribute('data-id', productId);
-            } else {
-                button.textContent = 'Добавить в корзину';
-                button.className = 'btn-primary add-to-cart';
-                button.setAttribute('data-id', productId);
+    removeFromCart(productId) {
+        const itemIndex = this.cart.findIndex(item => item.id == productId);
+        if (itemIndex > -1) {
+            const item = this.cart[itemIndex];
+            this.cart.splice(itemIndex, 1);
+            this.updateCartCount();
+            this.updateProductCard(productId);
+            if (document.getElementById('cartScreen').classList.contains('active')) {
+                this.renderCart();
+            }
+            this.showNotification(`Товар "${item.name}" удален из корзины`);
+        }
+    }
+
+    /**
+     * Обновляет карточку товара
+     */
+    updateProductCard(productId) {
+        const product = this.products.find(p => p.id == productId);
+        if (product) {
+            const productCard = document.querySelector(`.product-card[data-id="${productId}"]`);
+            if (productCard) {
+                const newCard = this.createProductCard(product);
+                productCard.outerHTML = newCard;
             }
         }
     }
@@ -624,6 +710,46 @@ class HairShopCatalog {
             const totalItems = this.cart.reduce((sum, item) => sum + item.quantity, 0);
             cartCount.textContent = totalItems;
             cartCount.style.display = totalItems > 0 ? 'flex' : 'none';
+        }
+    }
+
+    /**
+     * Переключение избранного
+     */
+    toggleFavorite(productId) {
+        const product = this.products.find(p => p.id == productId);
+        if (product) {
+            const existingIndex = this.favorites.findIndex(item => item.id == productId);
+            
+            if (existingIndex > -1) {
+                // Удаляем из избранного
+                this.favorites.splice(existingIndex, 1);
+                this.showNotification(`Товар "${product.name}" удален из избранного`);
+            } else {
+                // Добавляем в избранное
+                this.favorites.push(product);
+                this.showNotification(`Товар "${product.name}" добавлен в избранное!`);
+            }
+            
+            this.updateFavoritesCount();
+            this.updateProductCard(productId);
+            
+            // Если мы на экране избранного, обновляем его
+            if (document.getElementById('favoritesScreen').classList.contains('active')) {
+                this.renderFavorites();
+            }
+        }
+    }
+
+    /**
+     * Обновляет счетчик избранного
+     */
+    updateFavoritesCount() {
+        const favoritesCount = document.getElementById('favoritesCount');
+        if (favoritesCount) {
+            const totalItems = this.favorites.length;
+            favoritesCount.textContent = totalItems;
+            favoritesCount.style.display = totalItems > 0 ? 'flex' : 'none';
         }
     }
 
@@ -657,7 +783,7 @@ class HairShopCatalog {
                         <span>Длина: ${item.length} см</span>
                         <span>Цвет: ${item.color}</span>
                     </div>
-                    <div class="cart-item-price">${item.price.toLocaleString()} ₽</div>
+                    <div class="cart-item-price">${(item.price * item.quantity).toLocaleString()} ₽</div>
                 </div>
                 <div class="cart-item-controls">
                     <div class="quantity-controls">
@@ -673,9 +799,9 @@ class HairShopCatalog {
         // Добавляем обработчики для кнопок в корзине
         cartItems.addEventListener('click', (e) => {
             if (e.target.classList.contains('decrease-btn')) {
-                this.decreaseQuantity(e.target.getAttribute('data-id'));
+                this.updateCartQuantity(e.target.getAttribute('data-id'), 'decrease');
             } else if (e.target.classList.contains('increase-btn')) {
-                this.increaseQuantity(e.target.getAttribute('data-id'));
+                this.updateCartQuantity(e.target.getAttribute('data-id'), 'increase');
             } else if (e.target.classList.contains('remove-btn')) {
                 this.removeFromCart(e.target.getAttribute('data-id'));
             }
@@ -683,62 +809,81 @@ class HairShopCatalog {
     }
 
     /**
-     * Увеличивает количество товара
+     * Рендеринг избранного
      */
-    increaseQuantity(productId) {
-        const item = this.cart.find(item => item.id == productId);
-        if (item) {
-            item.quantity += 1;
-            this.updateCartCount();
-            this.renderCart();
+    renderFavorites() {
+        const favoritesContainer = document.getElementById('favoritesContainer');
+        
+        if (this.favorites.length === 0) {
+            favoritesContainer.innerHTML = '<div class="empty-state">❤️ В избранном пока ничего нет</div>';
+            return;
         }
+
+        favoritesContainer.innerHTML = this.favorites.map(product => this.createProductCard(product)).join('');
     }
 
     /**
-     * Уменьшает количество товара
+     * Рендеринг профиля
      */
-    decreaseQuantity(productId) {
-        const item = this.cart.find(item => item.id == productId);
-        if (item) {
-            if (item.quantity > 1) {
-                item.quantity -= 1;
-            } else {
-                this.removeFromCart(productId);
-                return;
-            }
-            this.updateCartCount();
-            this.renderCart();
-        }
-    }
-
-    /**
-     * Удаляет товар из корзины
-     */
-    removeFromCart(productId) {
-        const itemIndex = this.cart.findIndex(item => item.id == productId);
-        if (itemIndex > -1) {
-            const item = this.cart[itemIndex];
-            this.cart.splice(itemIndex, 1);
-            this.updateCartCount();
-            this.updateProductButton(productId);
-            this.renderCart();
-            this.showNotification(`Товар "${item.name}" удален из корзины`);
-        }
-    }
-
-    /**
-     * Показывает профиль
-     */
-    showProfile() {
+    renderProfile() {
+        // Обновляем информацию пользователя
         if (this.telegramUser) {
+            const profileName = document.getElementById('profileName');
+            const profileUsername = document.getElementById('profileUsername');
+            const profilePhoto = document.getElementById('profilePhoto');
+            const profileInitials = document.getElementById('profileInitials');
+
             const userName = `${this.telegramUser.first_name} ${this.telegramUser.last_name || ''}`.trim();
-            const userInfo = this.telegramUser.username ? 
-                `@${this.telegramUser.username}` : 'Имя пользователя не указано';
-            
-            alert(`👤 Ваш профиль:\n\n${userName}\n${userInfo}\n\n💎 Товаров в корзине: ${this.cart.length}`);
-        } else {
-            alert('👤 Профиль Telegram не доступен');
+            const userInitials = this.getUserInitials(userName);
+
+            if (profileName) profileName.textContent = userName;
+            if (profileUsername) {
+                if (this.telegramUser.username) {
+                    profileUsername.textContent = `@${this.telegramUser.username}`;
+                    profileUsername.href = `https://t.me/${this.telegramUser.username}`;
+                } else {
+                    profileUsername.style.display = 'none';
+                }
+            }
+
+            if (this.telegramUser.photo_url) {
+                profilePhoto.src = this.telegramUser.photo_url;
+                profilePhoto.style.display = 'block';
+                profileInitials.style.display = 'none';
+            } else {
+                profilePhoto.style.display = 'none';
+                profileInitials.style.display = 'flex';
+                profileInitials.textContent = userInitials;
+            }
         }
+
+        // Рендерим избранное в профиле
+        this.renderProfileFavorites();
+    }
+
+    /**
+     * Получает инициалы пользователя
+     */
+    getUserInitials(userName) {
+        return userName.split(' ')
+            .map(word => word.charAt(0))
+            .join('')
+            .toUpperCase()
+            .substring(0, 2);
+    }
+
+    /**
+     * Рендеринг избранного в профиле
+     */
+    renderProfileFavorites() {
+        const profileFavorites = document.getElementById('profileFavorites');
+        
+        if (this.favorites.length === 0) {
+            profileFavorites.innerHTML = '<div class="empty-state">❤️ В избранном пока ничего нет</div>';
+            return;
+        }
+
+        profileFavorites.innerHTML = this.favorites.map(product => this.createProductCard(product)).join('');
     }
 
     /**
@@ -761,7 +906,14 @@ class HairShopCatalog {
                        `💎 Итого: ${total.toLocaleString()} ₽\n\n` +
                        `🕐 Время: ${new Date().toLocaleString()}`;
 
-        // В реальном приложении здесь будет отправка на сервер
+        // Сохраняем покупку в историю
+        this.purchases.push({
+            id: Date.now(),
+            date: new Date(),
+            items: [...this.cart],
+            total: total
+        });
+
         alert(`✅ Заказ оформлен!\n\n${message}\n\nС вами свяжутся для подтверждения заказа.`);
         
         // Очищаем корзину после заказа
@@ -770,8 +922,8 @@ class HairShopCatalog {
         this.renderCart();
         this.showCatalogScreen();
         
-        // Обновляем кнопки товаров
-        this.products.forEach(product => this.updateProductButton(product.id));
+        // Обновляем карточки товаров
+        this.products.forEach(product => this.updateProductCard(product.id));
     }
 
     /**
