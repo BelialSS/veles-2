@@ -18,7 +18,7 @@ class HairShopCatalog {
             colors: []
         };
         
-        // **КРИТИЧНОЕ ИЗМЕНЕНИЕ: Безопасный путь к логотипу-заглушке**
+        // **ИСПРАВЛЕНО:** Используем новое, переименованное имя файла.
         this.PLACEHOLDER_LOGO = 'veles-logo.jpeg'; 
 
         this.init();
@@ -311,7 +311,7 @@ class HairShopCatalog {
                <span class="product-old-price">${product.oldPrice.toLocaleString()} ₽</span>`
             : `<span class="product-price">${product.price.toLocaleString()} ₽</span>`;
 
-        // **КРИТИЧНОЕ ИЗМЕНЕНИЕ: Используем константу PLACEHOLDER_LOGO**
+        // **ИСПРАВЛЕНИЕ: Используем константу PLACEHOLDER_LOGO, которая теперь содержит корректное имя файла.**
         // Устанавливаем заглушку, если product.imageUrl пуст
         const imageUrl = product.imageUrl && product.imageUrl.trim() !== '' ? product.imageUrl : this.PLACEHOLDER_LOGO;
         
