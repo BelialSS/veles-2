@@ -73,22 +73,40 @@ class HairShopCatalog {
     initTelegram() {
         if (window.Telegram && Telegram.WebApp) {
             this.telegramUser = Telegram.WebApp.initDataUnsafe?.user;
-            Telegram.WebApp.expand();
+            
+            // Всегда вызываем ready() и expand()
             Telegram.WebApp.ready();
+            Telegram.WebApp.expand();
             
             console.log('✅ Telegram WebApp initialized');
             console.log('👤 User:', this.telegramUser);
             
-            // Устанавливаем цвета для Telegram WebApp
-            Telegram.WebApp.setHeaderColor('#000000');
-            Telegram.WebApp.setBackgroundColor('#121212');
+            // Безопасная установка цветов с проверкой поддержки
+            try {
+                // Проверяем существование методов
+                if (typeof Telegram.WebApp.setHeaderColor === 'function') {
+                    Telegram.WebApp.setHeaderColor('#000000');
+                }
+                if (typeof Telegram.WebApp.setBackgroundColor === 'function') {
+                    Telegram.WebApp.setBackgroundColor('#121212');
+                }
+            } catch (error) {
+                console.log('ℹ️ Some Telegram WebApp features not available:', error.message);
+            }
+            
+            // Устанавливаем тему если поддерживается
+            if (typeof Telegram.WebApp.setParams === 'function') {
+                Telegram.WebApp.setParams({
+                    bg_color: '#121212',
+                    secondary_bg_color: '#1e1e1e'
+                });
+            }
         } else {
             console.log('⚠️ Telegram WebApp not detected, running in browser mode');
             this.telegramUser = {
                 first_name: 'Тестовый',
                 last_name: 'Пользователь', 
-                username: 'test_user',
-                photo_url: ''
+                username: 'test_user'
             };
         }
     }
@@ -591,13 +609,14 @@ class HairShopCatalog {
         const quantity = cartItem ? cartItem.quantity : 0;
         const isFavorite = this.favorites.some(item => item.id == product.id);
 
+        // Упрощенная версия без изображений, вызывающих 404 ошибки
         return `
             <div class="product-card" data-id="${product.id}">
                 <div class="product-image ${imageClass}">
-                    ${imageUrl ? 
-                        `<img src="${imageUrl}" alt="${product.name}" onerror="this.style.display='none'; this.parentElement.classList.add('no-image');">` : 
-                        '📷 Нет фото'
-                    }
+                    <!-- Заглушка вместо изображения -->
+                    <div class="image-placeholder">
+                        ${product.name.charAt(0).toUpperCase()}
+                    </div>
                     <button class="favorite-btn ${isFavorite ? 'active' : ''}" data-id="${product.id}">
                         ${isFavorite ? '❤️' : '🤍'}
                     </button>
@@ -871,10 +890,9 @@ class HairShopCatalog {
         container.innerHTML = this.cart.map(item => `
             <div class="order-item">
                 <div class="order-item-image">
-                    ${item.imageUrl ? 
-                        `<img src="${item.imageUrl}" alt="${item.name}">` : 
-                        '📷'
-                    }
+                    <div class="image-placeholder-small">
+                        ${item.name.charAt(0).toUpperCase()}
+                    </div>
                 </div>
                 <div class="order-item-info">
                     <div class="order-item-name">${item.name}</div>
@@ -1083,10 +1101,9 @@ class HairShopCatalog {
         cartItems.innerHTML = this.cart.map(item => `
             <div class="cart-item" data-id="${item.id}">
                 <div class="cart-item-image">
-                    ${item.imageUrl ? 
-                        `<img src="${item.imageUrl}" alt="${item.name}">` : 
-                        '📷'
-                    }
+                    <div class="image-placeholder-small">
+                        ${item.name.charAt(0).toUpperCase()}
+                    </div>
                 </div>
                 <div class="cart-item-info">
                     <div class="cart-item-name">${item.name}</div>
