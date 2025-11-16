@@ -30,7 +30,7 @@ class HairShopCatalog {
             const response = await fetch(this.CSV_URL);
             
             if (!response.ok) {
-                throw new Error(`HTTP ошибка! Статус: ${response.status}. Возможно, заблокирован corsproxy.io.`);
+                throw new Error(`HTTP ошибка! Статус: ${response.status}. Возможно, corsproxy.io заблокирован или ссылка неверна.`);
             }
             
             const csvText = await response.text();
@@ -40,7 +40,7 @@ class HairShopCatalog {
             console.log('✅ Разобрано продуктов:', this.products.length);
 
             if (this.products.length === 0) {
-                 this.renderError('Не удалось разобрать товары из CSV. Проверьте заголовки (id, price, length) и данные в таблице.');
+                 this.renderError('Не удалось разобрать товары из CSV. Проверьте заголовки (id, price, length, color и т.д.) и данные в таблице.');
                  return;
             }
 
@@ -62,14 +62,16 @@ class HairShopCatalog {
      * Ищет столбцы по названию заголовка (русскому или английскому), а не по порядку.
      */
     parseCSV(csvText) {
-        const lines = csvText.split('\n').filter(line => line.trim() !== ''); // Удаляем пустые строки
+        // Удаляем пустые строки и строки с лишними пробелами
+        const lines = csvText.split('\n').filter(line => line.trim() !== ''); 
         if (lines.length < 2) return []; 
 
+        // Парсинг заголовков (очищаем от кавычек, лишних пробелов и переводим в нижний регистр)
         const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, '')); 
         console.log('Обнаруженные заголовки:', headers);
         const products = [];
 
-        // Находим индексы по заголовкам
+        // Находим индексы по заголовкам (проверка на русские/английские варианты)
         const colIndices = {
             id: headers.indexOf('id'),
             name: headers.indexOf('name') > -1 ? headers.indexOf('name') : headers.indexOf('название'),
@@ -91,11 +93,10 @@ class HairShopCatalog {
             const line = lines[i].trim();
             if (!line) continue;
 
-            // Простой парсер CSV 
             const values = line.split(','); 
             const product = {};
 
-            // Функция для безопасного получения значения
+            // Функция для безопасного получения значения и удаления кавычек
             const getValue = (index) => (index !== -1 && values[index] !== undefined) ? values[index].trim().replace(/"/g, '') : null;
 
             product.id = getValue(colIndices.id);
@@ -119,6 +120,7 @@ class HairShopCatalog {
 
         const allLengths = this.products.map(p => p.length).filter(l => l > 0);
         const allPrices = this.products.map(p => p.price).filter(p => p > 0);
+        // Создаем массив уникальных цветов, исключая пустые/неизвестные
         const allColors = [...new Set(this.products.map(p => p.color))].filter(c => c && c.trim() !== '' && c !== 'Неизвестный'); 
 
         const minLength = Math.min(...allLengths);
@@ -132,6 +134,7 @@ class HairShopCatalog {
             colors: allColors.sort()
         };
         
+        // Устанавливаем текущие фильтры в границы диапазона
         this.filters.minLength = minLength;
         this.filters.maxLength = maxLength;
         this.filters.minPrice = minPrice;
@@ -145,6 +148,12 @@ class HairShopCatalog {
         if (!select) return;
         select.innerHTML = '';
         
+        // Создаем опцию для сброса фильтра, которая не будет добавляться в this.filters.colors
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '— Выберите цвет(а) —';
+        select.appendChild(defaultOption);
+
         colors.forEach(color => {
             const option = document.createElement('option');
             option.value = color;
@@ -236,23 +245,42 @@ class HairShopCatalog {
         const colorFilter = document.getElementById('colorFilter');
         const resetButton = document.getElementById('resetFilters');
 
+        // Устанавливаем min/max значения для ползунков на основе реальных данных
         if(this.filterRanges) {
-            if (lengthMinSlider) lengthMinSlider.min = this.filterRanges.length.min;
-            if (lengthMaxSlider) lengthMaxSlider.max = this.filterRanges.length.max;
-            if (priceMinSlider) priceMinSlider.min = this.filterRanges.price.min;
-            if (priceMaxSlider) priceMaxSlider.max = this.filterRanges.price.max;
+            if (lengthMinSlider) {
+                lengthMinSlider.min = this.filterRanges.length.min;
+                lengthMinSlider.max = this.filterRanges.length.max;
+            }
+            if (lengthMaxSlider) {
+                lengthMaxSlider.min = this.filterRanges.length.min;
+                lengthMaxSlider.max = this.filterRanges.length.max;
+            }
+            if (priceMinSlider) {
+                priceMinSlider.min = this.filterRanges.price.min;
+                priceMinSlider.max = this.filterRanges.price.max;
+            }
+            if (priceMaxSlider) {
+                priceMaxSlider.min = this.filterRanges.price.min;
+                priceMaxSlider.max = this.filterRanges.price.max;
+            }
         }
 
+        // Слушатели событий для ползунков
         [lengthMinSlider, lengthMaxSlider, priceMinSlider, priceMaxSlider].forEach(slider => {
             if (slider) slider.addEventListener('input', (e) => this.handleSliderInput(e.target));
         });
 
+        // Слушатель для фильтра по цвету
         if (colorFilter) colorFilter.addEventListener('change', this.handleColorFilterChange.bind(this));
+        // Слушатель для кнопки сброса
         if (resetButton) resetButton.addEventListener('click', this.resetFilters.bind(this));
     }
     
     handleColorFilterChange(event) {
-        this.filters.colors = Array.from(event.target.selectedOptions).map(option => option.value);
+        // Получаем все выбранные опции и фильтруем пустые значения (опция "— Выберите цвет(а) —")
+        this.filters.colors = Array.from(event.target.selectedOptions)
+                                 .map(option => option.value)
+                                 .filter(value => value !== ''); 
         this.applyFilters();
     }
 
@@ -266,6 +294,7 @@ class HairShopCatalog {
         const priceValueSpan = document.getElementById('priceValue');
         
         if (lengthValueSpan) lengthValueSpan.textContent = `${lengthMin}-${lengthMax} см`;
+        // Используем форматирование для валюты
         if (priceValueSpan) priceValueSpan.textContent = `${priceMin.toLocaleString('ru-RU')}-${priceMax.toLocaleString('ru-RU')} ₽`;
     }
     
@@ -275,6 +304,7 @@ class HairShopCatalog {
         const priceMinSlider = document.getElementById('priceMin');
         const priceMaxSlider = document.getElementById('priceMax');
 
+        // Обновляем позицию ползунков
         if (lengthMinSlider) lengthMinSlider.value = this.filters.minLength;
         if (lengthMaxSlider) lengthMaxSlider.value = this.filters.maxLength;
         if (priceMinSlider) priceMinSlider.value = this.filters.minPrice;
@@ -313,6 +343,7 @@ class HairShopCatalog {
             const priceMatch = product.price >= this.filters.minPrice && 
                              product.price <= this.filters.maxPrice;
             
+            // Если массив цветов пуст (нет выбранных фильтров), то цвет подходит (true)
             const colorMatch = this.filters.colors.length === 0 || 
                              this.filters.colors.includes(product.color);
             
@@ -324,16 +355,18 @@ class HairShopCatalog {
 
     resetFilters() {
         if (this.filterRanges) {
+            // Восстанавливаем фильтры до исходных границ диапазона
             this.filters = {
                 minLength: this.filterRanges.length.min,
                 maxLength: this.filterRanges.length.max,
                 minPrice: this.filterRanges.price.min,
                 maxPrice: this.filterRanges.price.max,
-                colors: []
+                colors: [] // Сбрасываем выбранные цвета
             };
             
             const colorFilter = document.getElementById('colorFilter');
-            if(colorFilter) colorFilter.selectedIndex = -1; // Сброс выбранных цветов
+            // Сброс выбранных опций в UI
+            if(colorFilter) Array.from(colorFilter.options).forEach(option => option.selected = false);
             
             this.updateRangeSliders();
             this.applyFilters();
@@ -341,12 +374,12 @@ class HairShopCatalog {
     }
 
     addToCart(productId) {
-        // Замена alert() на console.log()
+        // Используем console.log вместо alert
         console.log(`Товар #${productId} добавлен в корзину!`);
     }
 }
 
-// Запускаем каталог
+// Запускаем каталог при загрузке DOM
 document.addEventListener('DOMContentLoaded', function() {
     window.catalog = new HairShopCatalog();
 });
