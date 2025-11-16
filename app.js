@@ -1,12 +1,11 @@
 class HairShopCatalog {
     constructor() {
-        // !!! ВАЖНО: ЗАМЕНИТЕ ЭТУ ССЫЛКУ НА ВАШУ ОПУБЛИКОВАННУЮ CSV-ССЫЛКУ ИЗ GOOGLE ТАБЛИЦЫ
-        // Пример (замените на свою): "https://docs.google.com/spreadsheets/d/e/2PACX-1vS800Y_zN10Ys9uQfkEB67ZqlWMobbZTAkIu4l4X-a2rp1e80jlrFfhQV1m18n5hHCBANXc7VjRhIo5/pub?output=csv"
-        // Используем CORS прокси для обхода блокировки запросов между разными доменами
-        this.CSV_URL = "https://corsproxy.io/?https://docs.google.com/spreadsheets/d/e/2PACX-1vS800Y_zN10Ys9uQfkEB67ZqlWMobbZTAkIu4l4X-a2rp1e80jlrFfhQV1m18n5hHCBANXc7VjRhIo5/pub?output=csv";
+        // ID Вашей Google Таблицы (из URL)
+        // https://docs.google.com/spreadsheets/d/15KZ6DHJD4zin2nATxLG-xBGx-BClYWUDAY_mW0VIwoM/edit
+        this.SHEET_ID = "15KZ6DHJD4zin2nATxLG-xBGx-BClYWUDAY_mW0VIwoM";
         
         this.products = [];
-        this.filterRanges = null; // Для хранения мин/макс значений из CSV
+        this.filterRanges = null; // Для хранения мин/макс значений
         this.filters = {
             minLength: 14,
             maxLength: 30,
@@ -18,82 +17,127 @@ class HairShopCatalog {
         this.init();
     }
 
-    async init() {
-        this.renderLoading(); // Показываем заглушку сразу
-        await this.loadProductsFromCSV(); // Загружаем данные
-        this.setupEventListeners(); // Настраиваем обработчики событий
+    init() {
+        this.renderLoading(); // Показываем заглушку
+        
+        // 1. Определяем глобальную функцию, которую вызовет Google
+        // Мы привязываем 'this', чтобы внутри parseGoogleSheetJSON он указывал на наш класс
+        window.googleSheetCallback = this.parseGoogleSheetJSON.bind(this);
+        
+        // 2. Загружаем данные
+        this.loadProductsFromSheet();
     }
 
-    async loadProductsFromCSV() {
+    /**
+     * Загружает данные с помощью JSONP, создавая тег <script>
+     */
+    loadProductsFromSheet() {
         try {
-            console.log('📥 Loading from:', this.CSV_URL);
-            const response = await fetch(this.CSV_URL);
+            console.log('📥 Requesting data from Google Sheet using JSONP...');
+            const script = document.createElement('script');
             
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            // Используем Google Visualization API (gviz) для получения JSONP
+            // 'tqx=out:jsonp:googleSheetCallback' - говорит Google обернуть JSON в функцию 'googleSheetCallback'
+            // 'gid=0' - указывает, что мы берем первую страницу (лист) таблицы
+            const sheetURL = `https://docs.google.com/spreadsheets/d/${this.SHEET_ID}/gviz/tq?tqx=out:jsonp:googleSheetCallback&gid=0`;
             
-            const csvText = await response.text();
-            console.log('📄 CSV content loaded.');
+            script.src = sheetURL;
             
-            this.products = this.parseCSV(csvText);
-            console.log('✅ Parsed products:', this.products.length);
-
-            // Определяем начальные диапазоны фильтров на основе загруженных данных
-            this.determineFilterRanges();
+            // Обработка ошибки, если скрипт не загрузился (например, ID таблицы неверный)
+            script.onerror = () => {
+                this.renderError("Ошибка загрузки данных Google. Проверьте ID таблицы и убедитесь, что она опубликована (Файл -> Поделиться -> Опубликовать в интернете).");
+            };
             
-            // Применяем начальные фильтры и отрисовываем
-            this.updateRangeValues();
-            this.updateRangeSliders();
-            this.renderProducts(this.products);
-            
+            document.body.appendChild(script);
         } catch (error) {
-            console.error('❌ Ошибка загрузки или парсинга CSV:', error);
-            this.renderError('Не удалось загрузить данные каталога. Проверьте соединение, ссылку на CSV и консоль браузера.');
+            console.error('❌ Ошибка при создании script-тега:', error);
+            this.renderError(`Внутренняя ошибка JavaScript: ${error.message}`);
         }
     }
 
-    parseCSV(csvText) {
-        const lines = csvText.split('\n');
-        if (lines.length < 2) return []; // Меньше двух строк (заголовок + данные)
+    /**
+     * Эта функция НЕ вызывается нами, она вызывается Google после загрузки скрипта.
+     * @param {object} data - JSON-объект, возвращенный Google
+     */
+    parseGoogleSheetJSON(data) {
+        console.log('📄 Google Sheet JSONP data received:', data);
+        
+        if (!data || !data.table || !data.table.rows || !data.table.cols) {
+            this.renderError("Получены некорректные данные от Google. Убедитесь, что таблица опубликована в интернете (Файл -> Поделиться -> Опубликовать в интернете).");
+            return;
+        }
 
-        // Предполагаем, что первая строка - заголовок
-        // headers = ['ID', 'Название', 'Длина', 'Цена', 'СтараяЦена', 'Цвет', 'СсылкаНаИзображение', 'Описание']
-        const headers = lines[0].split(',').map(h => h.trim()); 
         const products = [];
+        // Получаем заголовки (l - это 'label')
+        const headers = data.table.cols.map(col => col.label.toLowerCase().trim());
+        
+        // Находим индексы по заголовкам. Это надежнее, чем порядок.
+        const colIndices = {
+            id: headers.indexOf('id'),
+            name: headers.find(h => h === 'name' || h === 'название') ? headers.indexOf(headers.find(h => h === 'name' || h === 'название')) : -1,
+            length: headers.find(h => h === 'length' || h === 'длина') ? headers.indexOf(headers.find(h => h === 'length' || h === 'длина')) : -1,
+            price: headers.find(h => h === 'price' || h === 'цена') ? headers.indexOf(headers.find(h => h === 'price' || h === 'цена')) : -1,
+            oldPrice: headers.find(h => h === 'old_price' || h === 'стараяцена') ? headers.indexOf(headers.find(h => h === 'old_price' || h === 'стараяцена')) : -1,
+            color: headers.find(h => h === 'color' || h === 'цвет') ? headers.indexOf(headers.find(h => h === 'color' || h === 'цвет')) : -1,
+            imageUrl: headers.find(h => h === 'images' || h === 'imageurl') ? headers.indexOf(headers.find(h => h === 'images' || h === 'imageurl')) : -1,
+            description: headers.find(h => h === 'description' || h === 'описание') ? headers.indexOf(headers.find(h => h === 'description' || h === 'описание')) : -1,
+        };
 
-        for (let i = 1; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line) continue;
+        // Проверка, найдены ли ключевые столбцы
+        if (colIndices.id === -1 || colIndices.price === -1 || colIndices.length === -1) {
+            this.renderError(`Критическая ошибка: В Google Таблице отсутствуют обязательные заголовки: 'id', 'price' (или 'цена'), 'length' (или 'длина'). Обнаруженные заголовки: [${headers.join(', ')}]`);
+            return;
+        }
 
-            const values = line.split(','); // Разделяем по запятой
+        const rows = data.table.rows;
+
+        for (const row of rows) {
             const product = {};
+            
+            // Функция для безопасного получения значения (v - это 'value')
+            const getValue = (index) => (index !== -1 && row.c[index] && row.c[index].v !== null) ? row.c[index].v : null;
 
-            // Предполагаемый порядок столбцов в CSV
-            product.id = parseInt(values[0]?.trim()) || 0;
-            product.name = values[1]?.trim() || 'Без названия';
-            product.length = parseInt(values[2]?.trim()) || 0;
-            product.price = parseInt(values[3]?.trim()) || 0;
-            product.oldPrice = parseInt(values[4]?.trim()) || 0;
-            product.color = values[5]?.trim() || 'Неизвестный';
-            product.imageUrl = values[6]?.trim() || '';
-            product.description = values[7]?.trim() || 'Нет описания.';
+            product.id = getValue(colIndices.id);
+            product.name = getValue(colIndices.name) || 'Без названия';
+            product.length = parseInt(getValue(colIndices.length)) || 0;
+            product.price = parseInt(getValue(colIndices.price)) || 0;
+            product.oldPrice = parseInt(getValue(colIndices.oldPrice)) || 0;
+            product.color = getValue(colIndices.color) || 'Неизвестный';
+            product.imageUrl = getValue(colIndices.imageUrl) || '';
+            product.description = getValue(colIndices.description) || 'Нет описания.';
 
-            // Добавляем только валидные товары
-            if (product.id > 0 && product.price > 0 && product.length > 0) {
+            if (product.id && product.price > 0 && product.length > 0) {
                 products.push(product);
             }
         }
-        return products;
+
+        this.products = products;
+        console.log('✅ Parsed products from JSONP:', this.products.length);
+        
+        if (this.products.length === 0) {
+            this.renderError("Товары загружены, но ни один не прошел валидацию. Проверьте данные в таблице (id, price, length).");
+            return;
+        }
+
+        // 3. Теперь, когда продукты загружены, настраиваем все остальное
+        this.determineFilterRanges();
+        this.updateRangeValues();
+        this.updateRangeSliders();
+        this.renderProducts(this.products);
+        // 4. Настраиваем обработчики событий ПОСЛЕ загрузки данных
+        this.setupEventListeners();
     }
     
-    // Определяет минимальные и максимальные значения для фильтров из загруженных товаров
+    //
+    // --- (Остальные методы класса не изменились) ---
+    //
+    
     determineFilterRanges() {
         if (this.products.length === 0) return;
 
         const allLengths = this.products.map(p => p.length).filter(l => l > 0);
         const allPrices = this.products.map(p => p.price).filter(p => p > 0);
-        const allColors = [...new Set(this.products.map(p => p.color))].filter(c => c);
+        const allColors = [...new Set(this.products.map(p => p.color))].filter(c => c && c.trim() !== ''); // Добавлена проверка на пустые строки
 
         this.filterRanges = {
             length: {
@@ -104,10 +148,9 @@ class HairShopCatalog {
                 min: Math.min(...allPrices) || 1000,
                 max: Math.max(...allPrices) || 10000
             },
-            colors: allColors.sort() // Сортируем цвета для удобства
+            colors: allColors.sort()
         };
         
-        // Устанавливаем начальные фильтры в найденные диапазоны
         this.filters.minLength = this.filterRanges.length.min;
         this.filters.maxLength = this.filterRanges.length.max;
         this.filters.minPrice = this.filterRanges.price.min;
@@ -116,11 +159,10 @@ class HairShopCatalog {
         this.setupColorFilter(allColors);
     }
     
-    // Заполняет выпадающий список цветов
     setupColorFilter(colors) {
         const select = document.getElementById('colorFilter');
         if (!select) return;
-        select.innerHTML = ''; // Очистка
+        select.innerHTML = '';
         
         colors.forEach(color => {
             const option = document.createElement('option');
@@ -130,7 +172,6 @@ class HairShopCatalog {
         });
     }
 
-    // Отображает индикатор загрузки
     renderLoading() {
         const container = document.getElementById('productsContainer');
         if (container) {
@@ -142,7 +183,6 @@ class HairShopCatalog {
         }
     }
     
-    // Отображает сообщение об ошибке
     renderError(message) {
         const container = document.getElementById('productsContainer');
         if (container) {
@@ -150,19 +190,17 @@ class HairShopCatalog {
                 <div class="error-message">
                     <h2>Проблема с загрузкой</h2>
                     <p>${message}</p>
-                    <p>Проверьте консоль для получения подробной информации.</p>
                 </div>
             `;
         }
     }
 
-    // Рендерит карточки товаров
     renderProducts(products) {
         const container = document.getElementById('productsContainer');
         const loadingIndicator = document.getElementById('loadingIndicator');
 
         if (loadingIndicator) {
-            loadingIndicator.remove(); // Удаляем индикатор загрузки, если он есть
+            loadingIndicator.remove();
         }
         
         if (!container) return;
@@ -185,7 +223,7 @@ class HairShopCatalog {
                      onerror="this.onerror=null;this.src='https://placehold.co/400x200/cccccc/333333?text=Нет+фото';">
                 <div class="product-info">
                     <h3 class="product-name">${product.name}</h3>
-                    <p class="product-description">${product.description}</p>
+                    <p class.product-description>${product.description}</p>
                     <p class="product-details">
                         📏 Длина: ${product.length} см | 🎨 Цвет: ${product.color}
                     </p>
@@ -201,7 +239,6 @@ class HairShopCatalog {
         `).join('');
     }
 
-    // Настраивает слушатели событий для элементов управления
     setupEventListeners() {
         const lengthMinSlider = document.getElementById('lengthMin');
         const lengthMaxSlider = document.getElementById('lengthMax');
@@ -211,7 +248,6 @@ class HairShopCatalog {
         const resetButton = document.getElementById('resetFilters');
 
         if(this.filterRanges) {
-            // Устанавливаем атрибуты min/max для ползунков на основе реальных данных
             if (lengthMinSlider) {
                 lengthMinSlider.min = this.filterRanges.length.min;
                 lengthMinSlider.max = this.filterRanges.length.max;
@@ -234,23 +270,20 @@ class HairShopCatalog {
             }
         }
 
-
         [lengthMinSlider, lengthMaxSlider, priceMinSlider, priceMaxSlider].forEach(slider => {
-            if (slider) slider.addEventListener('input', this.handleSliderInput.bind(this, slider));
+            if (slider) slider.addEventListener('input', (e) => this.handleSliderInput(e.target));
         });
 
         if (colorFilter) colorFilter.addEventListener('change', this.handleColorFilterChange.bind(this));
         if (resetButton) resetButton.addEventListener('click', this.resetFilters.bind(this));
     }
     
-    // Обрабатывает изменение выбранных цветов
     handleColorFilterChange(event) {
         const selectedOptions = Array.from(event.target.selectedOptions).map(option => option.value);
         this.filters.colors = selectedOptions;
         this.applyFilters();
     }
 
-    // Обновляет отображаемые значения ползунков
     updateRangeValues() {
         const lengthMin = document.getElementById('lengthMin') ? parseInt(document.getElementById('lengthMin').value) : this.filters.minLength;
         const lengthMax = document.getElementById('lengthMax') ? parseInt(document.getElementById('lengthMax').value) : this.filters.maxLength;
@@ -269,7 +302,6 @@ class HairShopCatalog {
         if (priceValueSpan) priceValueSpan.textContent = `${priceMin.toLocaleString('ru-RU')}-${priceMax.toLocaleString('ru-RU')} ₽`;
     }
     
-    // Обновляет позицию ползунков
     updateRangeSliders() {
         const lengthMinSlider = document.getElementById('lengthMin');
         const lengthMaxSlider = document.getElementById('lengthMax');
@@ -284,12 +316,10 @@ class HairShopCatalog {
         this.updateRangeValues();
     }
 
-    // Обрабатывает ввод в ползунок
     handleSliderInput(slider) {
         const currentId = slider.id;
         let value = parseInt(slider.value);
         
-        // Логика для ползунка длины (предотвращение инверсии)
         if (currentId === 'lengthMin' && value > this.filters.maxLength) {
             value = this.filters.maxLength;
             slider.value = value;
@@ -298,7 +328,6 @@ class HairShopCatalog {
             slider.value = value;
         }
         
-        // Логика для ползунка цены (предотвращение инверсии)
         if (currentId === 'priceMin' && value > this.filters.maxPrice) {
             value = this.filters.maxPrice;
             slider.value = value;
@@ -311,7 +340,6 @@ class HairShopCatalog {
         this.applyFilters();
     }
 
-    // Применяет все активные фильтры к продуктам
     applyFilters() {
         const filteredProducts = this.products.filter(product => {
             const lengthMatch = product.length >= this.filters.minLength && 
@@ -320,7 +348,6 @@ class HairShopCatalog {
             const priceMatch = product.price >= this.filters.minPrice && 
                              product.price <= this.filters.maxPrice;
             
-            // Если массив цветов пуст, совпадение по цвету = true (то есть, все цвета подходят)
             const colorMatch = this.filters.colors.length === 0 || 
                              this.filters.colors.includes(product.color);
             
@@ -330,7 +357,6 @@ class HairShopCatalog {
         this.renderProducts(filteredProducts);
     }
 
-    // Сбрасывает все фильтры к их начальным значениям
     resetFilters() {
         if (this.filterRanges) {
             this.filters = {
@@ -341,30 +367,23 @@ class HairShopCatalog {
                 colors: []
             };
             
-            // Сбрасываем выбранные опции в select
             const colorSelect = document.getElementById('colorFilter');
             if(colorSelect) {
                  Array.from(colorSelect.options).forEach(option => option.selected = false);
             }
             
-            this.updateRangeSliders(); // Обновляем ползунки и их значения
-            this.applyFilters(); // Повторно применяем фильтры (отображаем все товары)
+            this.updateRangeSliders();
+            this.applyFilters();
         }
     }
 
-    /**
-     * @description Функция для добавления товара в корзину.
-     * В реальном Mini App здесь будет интеграция с Telegram.WebApp.
-     */
     addToCart(productId) {
-        // Здесь можно добавить логику для работы с Telegram.WebApp, например:
-        // Telegram.WebApp.showAlert(`Товар #${productId} добавлен в корзину!`);
-        console.log(`Товар #${productId} добавлен в корзину! (В будущем здесь будет логика Telegram Mini App)`);
-        // Или можно обновить UI, чтобы показать, что товар в корзине
+        // В Mini App здесь будет интеграция с Telegram.WebApp
+        console.log(`Товар #${productId} добавлен в корзину!`);
     }
 }
 
-// Запускаем каталог после полной загрузки DOM
+// Запускаем каталог
 document.addEventListener('DOMContentLoaded', function() {
     window.catalog = new HairShopCatalog();
 });
