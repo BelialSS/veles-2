@@ -3,46 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hair Shop - Волосы для наращивания</title>
+    <title>Каталог Hair Shop</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <h1>💇‍♀️ Hair Shop</h1>
-            <p>Премиальные волосы для наращивания</p>
-        </header>
-
-        <div class="catalog">
-            <h2>🛍 Каталог волос</h2>
-            <div class="categories">
-                <div class="category-card">
-                    <h3>Бразильские волосы</h3>
-                    <p>От 4,500 ₽</p>
+    <header class="main-header">
+        <h1>Студия Волос Велес 👑</h1>
+    </header>
+    <div class="main-content">
+        <aside class="filter-sidebar">
+            <div class="filter-section">
+                <h3>🔍 Фильтры</h3>
+                
+                <div class="filter-group">
+                    <label>📏 Длина: <span id="lengthValue">14-30 см</span></label>
+                    <div class="range-slider">
+                        <input type="range" id="lengthMin" min="14" max="30" value="14" class="slider">
+                        <input type="range" id="lengthMax" min="14" max="30" value="30" class="slider">
+                    </div>
+                    <div class="range-labels">
+                        <span>14 см</span>
+                        <span>30 см</span>
+                    </div>
                 </div>
-                <div class="category-card">
-                    <h3>Перуанские волосы</h3>
-                    <p>От 3,800 ₽</p>
+                
+                <div class="filter-group">
+                    <label>💰 Цена: <span id="priceValue">1000-10000 ₽</span></label>
+                    <div class="range-slider">
+                        <input type="range" id="priceMin" min="1000" max="10000" value="1000" class="slider">
+                        <input type="range" id="priceMax" min="1000" max="10000" value="10000" class="slider">
+                    </div>
+                    <div class="range-labels">
+                        <span>1000 ₽</span>
+                        <span>10000 ₽</span>
+                    </div>
                 </div>
-                <div class="category-card">
-                    <h3>Монгольские волосы</h3>
-                    <p>От 5,200 ₽</p>
+                
+                <div class="filter-group">
+                    <label>🎨 Цвет:</label>
+                    <select id="colorFilter" multiple class="multi-select">
+                        <option value="Натуральные">Натуральные</option>
+                        <option value="Окрашенные">Окрашенные</option>
+                        <option value="Омбре">Омбре</option>
+                    </select>
                 </div>
-                <div class="category-card">
-                    <h3>Европейские волосы</h3>
-                    <p>От 4,000 ₽</p>
-                </div>
+                
+                <button id="applyFilters" class="btn-primary">Применить фильтры</button>
+                <button id="resetFilters" class="btn-secondary">Сбросить</button>
             </div>
-        </div>
+        </aside>
 
-        <div class="filters">
-            <h3>🔍 Фильтры:</h3>
-            <p>• Длина: 14-16см, 18-20см, 22-24см, 26-28см, 30+см</p>
-            <p>• Цвет: Натуральные, Окрашенные, Омбре</p>
-            <p>• Вес: 50г, 100г, 150г, 200г</p>
-        </div>
+        <main class="product-catalog">
+            <div id="productsContainer" class="products-container">
+                </div>
+        </main>
     </div>
-
     <script src="app.js"></script>
 </body>
 </html>

@@ -1,102 +1,249 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
+/* Глобальные стили */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.6;
-    color: #333;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    background-color: #121212; /* Темный фон */
+    color: #f0f0f0; /* Светлый текст */
 }
 
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
+.main-header {
+    background-color: #000000; /* Черный фон для хедера */
+    color: #ffc400; /* Золотой акцент для текста */
+    padding: 1.5rem 2rem;
+    box-shadow: 0 4px 10px rgba(255, 204, 0, 0.2); /* Золотая тень */
+}
+
+/* Изменяем заголовок h1 */
+.main-header h1 {
+    color: #ffc400; 
+}
+
+.main-content {
+    display: flex;
+    max-width: 1400px;
+    margin: 20px auto;
+    padding: 0 20px;
+}
+
+/* Стили для фильтров (сайдбар) */
+.filter-sidebar {
+    width: 300px;
+    flex-shrink: 0;
+    margin-right: 25px;
+}
+
+.filter-section {
+    background: #1e1e1e; /* Темный фон для сайдбара */
     padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    position: sticky; 
+    top: 20px;
 }
 
-.header {
-    text-align: center;
-    color: white;
-    margin-bottom: 2rem;
+.filter-group {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #333; /* Более темный разделитель */
 }
 
-.header h1 {
-    font-size: 2.5rem;
-    margin-bottom: 0.5rem;
+.filter-section h3 {
+    color: #ffc400; /* Золотой для заголовка */
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #333;
+    margin-bottom: 20px;
 }
 
-.catalog {
-    background: white;
-    padding: 2rem;
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    margin-bottom: 2rem;
+.filter-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #f0f0f0; /* Светлый текст */
 }
 
-.categories {
+/* Стили для кнопок */
+.btn-primary, .btn-secondary {
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.3s, transform 0.1s;
+    border: none;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.btn-primary {
+    background-color: #ffc400; /* Золотой акцент */
+    color: #000; /* Черный текст на золотом */
+}
+
+.btn-primary:hover {
+    background-color: #ffeb3b;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background-color: #333;
+    color: #f0f0f0;
+    border: 1px solid #555;
+}
+
+.btn-secondary:hover {
+    background-color: #555;
+}
+
+/* Стили для двойных ползунков */
+.range-slider {
+    position: relative;
+    height: 40px;
+    display: flex;
+    align-items: center;
+}
+
+.slider {
+    position: absolute;
+    width: 100%;
+    height: 5px;
+    background: #333; 
+    border-radius: 5px;
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: #ffc400; /* Золотой */
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid #1e1e1e; /* Темная рамка */
+    box-shadow: 0 2px 5px rgba(255, 204, 0, 0.3);
+}
+
+/* Мультиселект */
+.multi-select {
+    width: 100%;
+    height: 100px;
+    border: 1px solid #555;
+    border-radius: 8px;
+    padding: 5px;
+    outline: none;
+    background-color: #333;
+    color: #f0f0f0;
+}
+.multi-select option {
+    background-color: #333;
+    color: #f0f0f0;
+}
+
+/* Каталог и карточки товаров */
+.product-catalog {
+    flex-grow: 1;
+}
+
+.products-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-top: 1.5rem;
+    /* Базовое значение для десктопа */
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
 }
 
-.category-card {
-    background: #f8f9fa;
-    padding: 1.5rem;
-    border-radius: 10px;
-    text-align: center;
-    border: 2px solid #e9ecef;
-    transition: all 0.3s ease;
+.product-card {
+    border: 1px solid #333;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+    background: #1e1e1e; /* Темный фон карточки */
 }
 
-.category-card:hover {
-    transform: translateY(-5px);
-    border-color: #667eea;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+.product-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 30px rgba(255, 204, 0, 0.1);
 }
 
-.category-card h3 {
-    color: #333;
+.product-image {
+    width: 100%;
+    height: 200px;
+    background: #000; /* Черный фон для изображения */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+}
+
+.product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Новый стиль для заглушки-логотипа */
+.logo-placeholder {
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    object-fit: contain; /* Логотип полностью виден */
+}
+
+.product-info {
+    padding: 1rem 1.2rem;
+}
+
+.product-info h3 {
+    font-size: 1.15rem;
+    margin-top: 0;
     margin-bottom: 0.5rem;
+    color: #ffc400; /* Золотой заголовок */
 }
 
-.category-card p {
-    color: #667eea;
-    font-weight: bold;
-    font-size: 1.1rem;
-}
-
-.filters {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-}
-
-.filters h3 {
+.product-meta {
+    font-size: 0.85rem;
+    color: #aaa; /* Светло-серый текст */
     margin-bottom: 1rem;
-    color: #333;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px 10px;
 }
 
-.filters p {
-    margin-bottom: 0.5rem;
-    color: #666;
+.product-price {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #ffc400; /* Золотой */
+    margin: 0.75rem 0;
 }
 
-@media (max-width: 768px) {
-    .container {
-        padding: 10px;
+.product-old-price {
+    text-decoration: line-through;
+    color: #555;
+    font-size: 1rem;
+    margin-left: 0.5rem;
+}
+
+/* Адаптивность для узких экранов (мобильные устройства) */
+@media (max-width: 900px) {
+    .main-content {
+        flex-direction: column;
+        padding: 0 10px;
+    }
+
+    .filter-sidebar {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 20px;
     }
     
-    .header h1 {
-        font-size: 2rem;
+    .filter-section {
+        position: static;
     }
-    
-    .categories {
-        grid-template-columns: 1fr;
+
+    /* !!! ИЗМЕНЕНИЕ ДЛЯ ПРИНУДИТЕЛЬНЫХ ДВУХ КОЛОНОК НА МОБИЛЬНЫХ !!! */
+    /* Применяется на экранах до 900px (включая вертикальный и горизонтальный мобильный) */
+    .products-container {
+        grid-template-columns: repeat(2, 1fr); /* 2 колонки одинаковой ширины */
+        gap: 15px; /* Уменьшаем отступ для узких экранов */
     }
 }
