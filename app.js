@@ -14,6 +14,8 @@ class HairShopCatalog {
             colors: []
         };
         
+        this.dataLoaded = false; // Флаг для отслеживания таймаута
+        
         this.init();
     }
 
@@ -49,6 +51,15 @@ class HairShopCatalog {
             };
             
             document.body.appendChild(script);
+
+            // !! НОВОЕ: Добавляем таймаут на 10 секунд
+            setTimeout(() => {
+                if (!this.dataLoaded) { // Если флаг dataLoaded все еще false
+                    console.error('Timeout: Google Sheet data did not load after 10 seconds.');
+                    this.renderError("Ошибка: Время ожидания от Google Таблиц истекло. Убедитесь, что таблица опубликована (Файл -> Поделиться -> Опубликовать в интернете) и у вас есть соединение.");
+                }
+            }, 10000); // 10-секундный таймаут
+
         } catch (error) {
             console.error('❌ Ошибка при создании script-тега:', error);
             this.renderError(`Внутренняя ошибка JavaScript: ${error.message}`);
@@ -60,6 +71,7 @@ class HairShopCatalog {
      * @param {object} data - JSON-объект, возвращенный Google
      */
     parseGoogleSheetJSON(data) {
+        this.dataLoaded = true; // !! НОВОЕ: Устанавливаем флаг, что данные пришли
         console.log('📄 Google Sheet JSONP data received:', data);
         
         if (!data || !data.table || !data.table.rows || !data.table.cols) {
@@ -382,8 +394,3 @@ class HairShopCatalog {
         console.log(`Товар #${productId} добавлен в корзину!`);
     }
 }
-
-// Запускаем каталог
-document.addEventListener('DOMContentLoaded', function() {
-    window.catalog = new HairShopCatalog();
-});
