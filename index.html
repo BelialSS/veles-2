@@ -117,6 +117,78 @@
         </div>
     </div>
 
+    <!-- Экран избранного -->
+    <div id="favoritesScreen" class="screen">
+        <header class="main-header">
+            <div class="header-top">
+                <div class="header-left">
+                    <button id="backFromFavorites" class="header-icon-btn">
+                        ←
+                    </button>
+                </div>
+                <h1>❤️ Избранное</h1>
+                <div class="header-right">
+                    <div class="header-placeholder"></div>
+                </div>
+            </div>
+        </header>
+        <div class="favorites-content">
+            <div id="favoritesContainer" class="products-container">
+                <!-- Избранные товары будут здесь -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Экран профиля -->
+    <div id="profileScreen" class="screen">
+        <header class="main-header">
+            <div class="header-top">
+                <div class="header-left">
+                    <button id="backFromProfile" class="header-icon-btn">
+                        ←
+                    </button>
+                </div>
+                <h1>👤 Профиль</h1>
+                <div class="header-right">
+                    <div class="header-placeholder"></div>
+                </div>
+            </div>
+        </header>
+        <div class="profile-content">
+            <div class="profile-info">
+                <div class="profile-avatar">
+                    <img id="profilePhoto" src="" alt="Аватар" onerror="this.style.display='none'">
+                    <div id="profileInitials" class="profile-initials"></div>
+                </div>
+                <div class="profile-details">
+                    <h2 id="profileName">Пользователь</h2>
+                    <a id="profileUsername" href="#" class="profile-link">@username</a>
+                </div>
+            </div>
+            
+            <div class="profile-tabs">
+                <button class="tab-btn active" data-tab="purchases">Мои покупки</button>
+                <button class="tab-btn" data-tab="favorites">Избранное</button>
+            </div>
+            
+            <div class="tab-content">
+                <div id="purchasesTab" class="tab-pane active">
+                    <div class="purchases-list">
+                        <!-- История покупок будет здесь -->
+                        <div class="empty-state">
+                            📦 У вас пока нет покупок
+                        </div>
+                    </div>
+                </div>
+                <div id="favoritesTab" class="tab-pane">
+                    <div id="profileFavorites" class="products-container">
+                        <!-- Избранные товары в профиле -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Экран оформления заказа -->
     <div id="checkoutScreen" class="screen">
         <header class="main-header">
