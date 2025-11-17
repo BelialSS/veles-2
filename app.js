@@ -1,3 +1,4 @@
+
 /**
  * Класс HairShopCatalog управляет загрузкой данных, фильтрацией и отображением товаров.
  */
@@ -307,13 +308,21 @@ class HairShopCatalog {
         // Кнопки перехода между экранами
         const cartBtn = document.getElementById('cartBtn');
         const checkoutBtn = document.getElementById('checkoutBtn');
+        const favoritesBtn = document.getElementById('favoritesBtn');
+        const profileBtn = document.getElementById('profileBtn');
         const backFromCheckout = document.getElementById('backFromCheckout');
         const backFromCart = document.getElementById('backFromCart');
+        const backFromFavorites = document.getElementById('backFromFavorites');
+        const backFromProfile = document.getElementById('backFromProfile');
 
         if (cartBtn) cartBtn.addEventListener('click', () => this.showCartScreen());
         if (checkoutBtn) checkoutBtn.addEventListener('click', () => this.showCheckoutScreen());
+        if (favoritesBtn) favoritesBtn.addEventListener('click', () => this.showFavoritesScreen());
+        if (profileBtn) profileBtn.addEventListener('click', () => this.showProfileScreen());
         if (backFromCheckout) backFromCheckout.addEventListener('click', () => this.showCartScreen());
         if (backFromCart) backFromCart.addEventListener('click', () => this.showCatalogScreen());
+        if (backFromFavorites) backFromFavorites.addEventListener('click', () => this.showCatalogScreen());
+        if (backFromProfile) backFromProfile.addEventListener('click', () => this.showCatalogScreen());
         
         // Выбор способа доставки
         document.querySelectorAll('input[name="delivery"]').forEach(radio => {
@@ -335,6 +344,15 @@ class HairShopCatalog {
         if (confirmOrderBtn) {
             confirmOrderBtn.addEventListener('click', () => this.confirmOrder());
         }
+
+        // Вкладки профиля
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.getAttribute('data-tab');
+                this.switchProfileTab(tab);
+            });
+        });
     }
 
     /**
@@ -705,6 +723,8 @@ class HairShopCatalog {
     showCatalogScreen() {
         document.getElementById('catalogScreen').classList.add('active');
         document.getElementById('cartScreen').classList.remove('active');
+        document.getElementById('favoritesScreen').classList.remove('active');
+        document.getElementById('profileScreen').classList.remove('active');
         document.getElementById('checkoutScreen').classList.remove('active');
     }
 
@@ -716,8 +736,28 @@ class HairShopCatalog {
 
         document.getElementById('catalogScreen').classList.remove('active');
         document.getElementById('cartScreen').classList.add('active');
+        document.getElementById('favoritesScreen').classList.remove('active');
+        document.getElementById('profileScreen').classList.remove('active');
         document.getElementById('checkoutScreen').classList.remove('active');
         this.renderCart();
+    }
+
+    showFavoritesScreen() {
+        document.getElementById('catalogScreen').classList.remove('active');
+        document.getElementById('cartScreen').classList.remove('active');
+        document.getElementById('favoritesScreen').classList.add('active');
+        document.getElementById('profileScreen').classList.remove('active');
+        document.getElementById('checkoutScreen').classList.remove('active');
+        this.renderFavorites();
+    }
+
+    showProfileScreen() {
+        document.getElementById('catalogScreen').classList.remove('active');
+        document.getElementById('cartScreen').classList.remove('active');
+        document.getElementById('favoritesScreen').classList.remove('active');
+        document.getElementById('profileScreen').classList.add('active');
+        document.getElementById('checkoutScreen').classList.remove('active');
+        this.renderProfile();
     }
 
     showCheckoutScreen() {
@@ -728,11 +768,151 @@ class HairShopCatalog {
 
         document.getElementById('catalogScreen').classList.remove('active');
         document.getElementById('cartScreen').classList.remove('active');
+        document.getElementById('favoritesScreen').classList.remove('active');
+        document.getElementById('profileScreen').classList.remove('active');
         document.getElementById('checkoutScreen').classList.add('active');
         
         this.renderCheckoutItems();
         this.toggleAddressSection();
         this.updateCheckoutAddressDisplay();
+    }
+
+    /**
+     * Переключение вкладок профиля
+     */
+    switchProfileTab(tab) {
+        // Обновляем активные кнопки
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+
+        // Обновляем активные панели
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.classList.remove('active');
+        });
+        document.getElementById(`${tab}Tab`).classList.add('active');
+
+        if (tab === 'favorites') {
+            this.renderProfileFavorites();
+        } else if (tab === 'purchases') {
+            this.renderPurchases();
+        }
+    }
+
+    /**
+     * Рендеринг избранного
+     */
+    renderFavorites() {
+        const favoritesContainer = document.getElementById('favoritesContainer');
+        
+        if (this.favorites.length === 0) {
+            favoritesContainer.innerHTML = '<div class="empty-state">❤️ В избранном пока ничего нет</div>';
+            return;
+        }
+
+        favoritesContainer.innerHTML = this.favorites.map(product => this.createProductCard(product)).join('');
+    }
+
+    /**
+     * Рендеринг профиля
+     */
+    renderProfile() {
+        // Обновляем информацию пользователя
+        if (this.telegramUser) {
+            const profileName = document.getElementById('profileName');
+            const profileUsername = document.getElementById('profileUsername');
+            const profilePhoto = document.getElementById('profilePhoto');
+            const profileInitials = document.getElementById('profileInitials');
+
+            const userName = `${this.telegramUser.first_name} ${this.telegramUser.last_name || ''}`.trim();
+            const userInitials = this.getUserInitials(userName);
+
+            if (profileName) profileName.textContent = userName;
+            if (profileUsername) {
+                if (this.telegramUser.username) {
+                    profileUsername.textContent = `@${this.telegramUser.username}`;
+                    profileUsername.href = `https://t.me/${this.telegramUser.username}`;
+                } else {
+                    profileUsername.style.display = 'none';
+                }
+            }
+
+            if (this.telegramUser.photo_url) {
+                profilePhoto.src = this.telegramUser.photo_url;
+                profilePhoto.style.display = 'block';
+                profileInitials.style.display = 'none';
+            } else {
+                profilePhoto.style.display = 'none';
+                profileInitials.style.display = 'flex';
+                profileInitials.textContent = userInitials;
+            }
+        }
+
+        // Рендерим вкладки
+        this.renderProfileFavorites();
+        this.renderPurchases();
+    }
+
+    /**
+     * Получает инициалы пользователя
+     */
+    getUserInitials(userName) {
+        return userName.split(' ')
+            .map(word => word.charAt(0))
+            .join('')
+            .toUpperCase()
+            .substring(0, 2);
+    }
+
+    /**
+     * Рендеринг избранного в профиле
+     */
+    renderProfileFavorites() {
+        const profileFavorites = document.getElementById('profileFavorites');
+        
+        if (this.favorites.length === 0) {
+            profileFavorites.innerHTML = '<div class="empty-state">❤️ В избранном пока ничего нет</div>';
+            return;
+        }
+
+        profileFavorites.innerHTML = this.favorites.map(product => this.createProductCard(product)).join('');
+    }
+
+    /**
+     * Рендеринг истории покупок
+     */
+    renderPurchases() {
+        const purchasesList = document.getElementById('purchasesTab');
+        
+        if (this.purchases.length === 0) {
+            purchasesList.innerHTML = '<div class="empty-state">📦 У вас пока нет покупок</div>';
+            return;
+        }
+
+        purchasesList.innerHTML = `
+            <div class="purchases-list">
+                ${this.purchases.map(purchase => `
+                    <div class="purchase-item">
+                        <div class="purchase-header">
+                            <strong>Заказ #${purchase.id}</strong>
+                            <span class="purchase-date">${new Date(purchase.date).toLocaleDateString()}</span>
+                        </div>
+                        <div class="purchase-items">
+                            ${purchase.items.map(item => `
+                                <div class="purchase-item-info">
+                                    <span>${item.name}</span>
+                                    <span>${item.quantity} × ${item.price.toLocaleString()} ₽</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="purchase-total">
+                            Итого: ${purchase.total.toLocaleString()} ₽
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
     }
 
     /**
@@ -938,7 +1118,7 @@ class HairShopCatalog {
                        `👤 Покупатель: ${this.telegramUser?.first_name || 'Неизвестно'}\n` +
                        `🚚 Способ получения: ${this.deliveryMethod === 'delivery' ? 'Доставка' : 'Самовывоз'}\n` +
                        `${deliveryInfo}\n` +
-                       `💳 Способ оплата: ${paymentMethods[this.paymentMethod]}\n\n` +
+                       `💳 Способ оплаты: ${paymentMethods[this.paymentMethod]}\n\n` +
                        `📦 Товары:\n${orderDetails}\n\n` +
                        `💎 Итого: ${total.toLocaleString()} ₽\n\n` +
                        `🕐 Время: ${new Date().toLocaleString()}`;
