@@ -85,33 +85,27 @@ class HairShopCatalog {
      */
     async loadProductsFromCSV() {
         try {
-            console.log('📥 Загрузка из (CORS Proxy):', this.CSV_URL);
+            console.log('📥 Loading products from CSV...');
             const response = await fetch(this.CSV_URL);
-            
             if (!response.ok) {
-                throw new Error(`HTTP ошибка! Статус: ${response.status}. Возможно, corsproxy.io заблокирован или ссылка неверна.`);
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
             const csvText = await response.text();
-            console.log('📄 CSV контент загружен.');
-            
-            this.products = this.parseCSV(csvText); 
-            console.log('✅ Разобрано продуктов:', this.products.length);
+            this.products = this.parseCSV(csvText);
 
-            if (this.products.length === 0) {
-                 this.renderError('Не удалось разобрать товары из CSV. Проверьте заголовки (id, price, length, color и т.д.) и данные в таблице.');
-                 return;
-            }
+            // Инициализация диапазонов фильтров на основе загруженных данных
+            this.initializeFilterRanges();
 
-            // Настраиваем все элементы UI
-            this.determineFilterRanges();
-            this.updateRangeValues();
-            this.updateRangeSliders();
             this.renderProducts(this.products);
-            
+            console.log(`✅ ${this.products.length} товаров загружено!`);
         } catch (error) {
-            console.error('❌ Ошибка загрузки или парсинга CSV:', error);
-            this.renderError(`Не удалось загрузить данные каталога: ${error.message}. Пожалуйста, проверьте консоль (F12) для деталей.`);
+            console.error("❌ Ошибка загрузки данных:", error);
+            const container = document.getElementById('productsContainer');
+            if (container) {
+                container.innerHTML = `<div style="text-align: center; color: #ffc400; padding: 50px;">
+                    Ошибка загрузки данных. Проверьте URL CSV и настройки доступа: ${error.message}
+                </div>`;
+            }
         }
     }
 
