@@ -27,6 +27,13 @@ class HairShopCatalog {
         this.deliveryMethod = 'pickup';
         this.paymentMethod = 'cash';
         
+        // Ключи для localStorage с привязкой к ID пользователя
+        this.userId = null;
+        this.cartKey = null;
+        this.favoritesKey = null;
+        this.purchasesKey = null;
+        this.addressesKey = null;
+        
         this.init();
     }
 
@@ -36,7 +43,8 @@ class HairShopCatalog {
     async init() {
         console.log('🚀 Initializing HairShopCatalog...');
         try {
-            this.initTelegram();
+            await this.initTelegram();
+            this.initUserStorage();
             this.initAddressSystem();
             this.renderLoading();
             await this.loadProductsFromCSV();
@@ -50,65 +58,178 @@ class HairShopCatalog {
     }
 
     /**
-     * Отображает индикатор загрузки.
+     * Инициализация Telegram WebApp
      */
-    renderLoading() {
-        const container = document.getElementById('productsContainer');
-        if (container) {
-            container.innerHTML = '<div style="text-align: center; padding: 50px; color: #ffc400;">Загрузка данных...</div>';
+    async initTelegram() {
+        return new Promise((resolve) => {
+            if (window.Telegram && Telegram.WebApp) {
+                // Ждем инициализации Telegram WebApp
+                if (Telegram.WebApp.initData) {
+                    this.processTelegramUser();
+                    resolve();
+                } else {
+                    // Если данные еще не загружены, ждем
+                    Telegram.WebApp.ready();
+                    setTimeout(() => {
+                        this.processTelegramUser();
+                        resolve();
+                    }, 100);
+                }
+            } else {
+                console.log('⚠️ Telegram WebApp not detected, running in browser mode');
+                this.telegramUser = {
+                    id: 'browser_user_' + Date.now(),
+                    first_name: 'Тестовый',
+                    last_name: 'Пользователь', 
+                    username: 'test_user',
+                    photo_url: ''
+                };
+                resolve();
+            }
+        });
+    }
+
+    /**
+     * Обработка данных пользователя Telegram
+     */
+    processTelegramUser() {
+        try {
+            const initData = Telegram.WebApp.initDataUnsafe;
+            console.log('📋 Telegram initData:', initData);
+            
+            if (initData && initData.user) {
+                this.telegramUser = {
+                    id: initData.user.id,
+                    first_name: initData.user.first_name,
+                    last_name: initData.user.last_name || '',
+                    username: initData.user.username || '',
+                    photo_url: initData.user.photo_url || ''
+                };
+                
+                console.log('✅ Telegram user loaded:', this.telegramUser);
+                
+                // Всегда вызываем ready() и expand()
+                Telegram.WebApp.ready();
+                Telegram.WebApp.expand();
+                
+                // Безопасная установка параметров
+                try {
+                    if (typeof Telegram.WebApp.setHeaderColor === 'function') {
+                        Telegram.WebApp.setHeaderColor('#000000');
+                    }
+                    if (typeof Telegram.WebApp.setBackgroundColor === 'function') {
+                        Telegram.WebApp.setBackgroundColor('#121212');
+                    }
+                } catch (error) {
+                    console.log('ℹ️ Some Telegram WebApp features not available');
+                }
+            } else {
+                console.log('⚠️ No Telegram user data found');
+                this.telegramUser = {
+                    id: 'unknown_user_' + Date.now(),
+                    first_name: 'Гость',
+                    last_name: '',
+                    username: '',
+                    photo_url: ''
+                };
+            }
+        } catch (error) {
+            console.error('❌ Error processing Telegram user:', error);
+            this.telegramUser = {
+                id: 'error_user_' + Date.now(),
+                first_name: 'Гость',
+                last_name: '',
+                username: '',
+                photo_url: ''
+            };
         }
+    }
+
+    /**
+     * Инициализация системы хранения данных пользователя
+     */
+    initUserStorage() {
+        this.userId = this.telegramUser?.id || 'anonymous';
+        
+        // Создаем уникальные ключи для каждого пользователя
+        this.cartKey = `cart_${this.userId}`;
+        this.favoritesKey = `favorites_${this.userId}`;
+        this.purchasesKey = `purchases_${this.userId}`;
+        this.addressesKey = `addresses_${this.userId}`;
+        
+        console.log('💾 User storage initialized for user:', this.userId);
     }
 
     /**
      * Инициализация системы адресов
      */
     initAddressSystem() {
-        this.userAddresses = JSON.parse(localStorage.getItem('userAddresses') || '[]');
+        this.userAddresses = JSON.parse(localStorage.getItem(this.addressesKey) || '[]');
         this.selectedAddress = null;
         console.log('📍 Address system initialized with', this.userAddresses.length, 'addresses');
     }
 
     /**
-     * Инициализация Telegram WebApp
+     * Загрузка корзины из localStorage
      */
-    initTelegram() {
-        if (window.Telegram && Telegram.WebApp) {
-            this.telegramUser = Telegram.WebApp.initDataUnsafe?.user;
-            
-            // Всегда вызываем ready() и expand()
-            Telegram.WebApp.ready();
-            Telegram.WebApp.expand();
-            
-            console.log('✅ Telegram WebApp initialized');
-            console.log('👤 User:', this.telegramUser);
-            
-            // Безопасная установка цветов с проверкой поддержки
-            try {
-                // Проверяем существование методов
-                if (typeof Telegram.WebApp.setHeaderColor === 'function') {
-                    Telegram.WebApp.setHeaderColor('#000000');
-                }
-                if (typeof Telegram.WebApp.setBackgroundColor === 'function') {
-                    Telegram.WebApp.setBackgroundColor('#121212');
-                }
-            } catch (error) {
-                console.log('ℹ️ Some Telegram WebApp features not available:', error.message);
-            }
-            
-            // Устанавливаем тему если поддерживается
-            if (typeof Telegram.WebApp.setParams === 'function') {
-                Telegram.WebApp.setParams({
-                    bg_color: '#121212',
-                    secondary_bg_color: '#1e1e1e'
-                });
-            }
-        } else {
-            console.log('⚠️ Telegram WebApp not detected, running in browser mode');
-            this.telegramUser = {
-                first_name: 'Тестовый',
-                last_name: 'Пользователь', 
-                username: 'test_user'
-            };
+    loadCart() {
+        const savedCart = localStorage.getItem(this.cartKey);
+        if (savedCart) {
+            this.cart = JSON.parse(savedCart);
+            console.log('🛒 Cart loaded:', this.cart.length, 'items');
+        }
+    }
+
+    /**
+     * Сохранение корзины в localStorage
+     */
+    saveCart() {
+        localStorage.setItem(this.cartKey, JSON.stringify(this.cart));
+    }
+
+    /**
+     * Загрузка избранного из localStorage
+     */
+    loadFavorites() {
+        const savedFavorites = localStorage.getItem(this.favoritesKey);
+        if (savedFavorites) {
+            this.favorites = JSON.parse(savedFavorites);
+            console.log('❤️ Favorites loaded:', this.favorites.length, 'items');
+        }
+    }
+
+    /**
+     * Сохранение избранного в localStorage
+     */
+    saveFavorites() {
+        localStorage.setItem(this.favoritesKey, JSON.stringify(this.favorites));
+    }
+
+    /**
+     * Загрузка истории покупок из localStorage
+     */
+    loadPurchases() {
+        const savedPurchases = localStorage.getItem(this.purchasesKey);
+        if (savedPurchases) {
+            this.purchases = JSON.parse(savedPurchases);
+            console.log('📦 Purchases history loaded:', this.purchases.length, 'orders');
+        }
+    }
+
+    /**
+     * Сохранение истории покупок в localStorage
+     */
+    savePurchases() {
+        localStorage.setItem(this.purchasesKey, JSON.stringify(this.purchases));
+    }
+
+    /**
+     * Отображает индикатор загрузки.
+     */
+    renderLoading() {
+        const container = document.getElementById('productsContainer');
+        if (container) {
+            container.innerHTML = '<div style="text-align: center; padding: 50px; color: #ffc400;">Загрузка данных...</div>';
         }
     }
 
@@ -157,6 +278,11 @@ class HairShopCatalog {
             }
             const csvText = await response.text();
             this.products = this.parseCSV(csvText);
+
+            // Загружаем пользовательские данные после загрузки товаров
+            this.loadCart();
+            this.loadFavorites();
+            this.loadPurchases();
 
             // Инициализация диапазонов фильтров на основе загруженных данных
             this.initializeFilterRanges();
@@ -833,6 +959,7 @@ class HairShopCatalog {
                 if (this.telegramUser.username) {
                     profileUsername.textContent = `@${this.telegramUser.username}`;
                     profileUsername.href = `https://t.me/${this.telegramUser.username}`;
+                    profileUsername.style.display = 'block';
                 } else {
                     profileUsername.style.display = 'none';
                 }
@@ -890,13 +1017,16 @@ class HairShopCatalog {
             return;
         }
 
+        // Сортируем покупки по дате (новые сверху)
+        const sortedPurchases = [...this.purchases].sort((a, b) => new Date(b.date) - new Date(a.date));
+
         purchasesList.innerHTML = `
             <div class="purchases-list">
-                ${this.purchases.map(purchase => `
+                ${sortedPurchases.map(purchase => `
                     <div class="purchase-item">
                         <div class="purchase-header">
                             <strong>Заказ #${purchase.id}</strong>
-                            <span class="purchase-date">${new Date(purchase.date).toLocaleDateString()}</span>
+                            <span class="purchase-date">${new Date(purchase.date).toLocaleDateString('ru-RU')}</span>
                         </div>
                         <div class="purchase-items">
                             ${purchase.items.map(item => `
@@ -908,6 +1038,9 @@ class HairShopCatalog {
                         </div>
                         <div class="purchase-total">
                             Итого: ${purchase.total.toLocaleString()} ₽
+                        </div>
+                        <div class="purchase-delivery">
+                            ${purchase.delivery === 'delivery' ? '🚚 Доставка' : '🏪 Самовывоз'}
                         </div>
                     </div>
                 `).join('')}
@@ -1016,7 +1149,7 @@ class HairShopCatalog {
         };
 
         this.userAddresses.push(newAddress);
-        localStorage.setItem('userAddresses', JSON.stringify(this.userAddresses));
+        localStorage.setItem(this.addressesKey, JSON.stringify(this.userAddresses));
         this.selectedAddress = this.userAddresses.length - 1;
         this.hideNewAddressModal();
         this.showNotification('✅ Адрес успешно сохранен!');
@@ -1124,7 +1257,7 @@ class HairShopCatalog {
                        `🕐 Время: ${new Date().toLocaleString()}`;
 
         // Сохраняем покупку
-        this.purchases.push({
+        const newPurchase = {
             id: Date.now(),
             date: new Date(),
             items: [...this.cart],
@@ -1132,12 +1265,16 @@ class HairShopCatalog {
             delivery: this.deliveryMethod,
             payment: this.paymentMethod,
             address: this.deliveryMethod === 'delivery' ? this.userAddresses[this.selectedAddress] : null
-        });
+        };
+
+        this.purchases.push(newPurchase);
+        this.savePurchases();
 
         alert(message);
         
         // Очищаем корзину
         this.cart = [];
+        this.saveCart();
         this.updateCartCount();
         this.showCatalogScreen();
         this.products.forEach(product => this.updateProductCard(product.id));
@@ -1153,6 +1290,7 @@ class HairShopCatalog {
                 ...product,
                 quantity: 1
             });
+            this.saveCart();
             this.updateCartCount();
             this.updateProductCard(productId);
             this.showNotification(`Товар "${product.name}" добавлен в корзину!`);
@@ -1175,6 +1313,7 @@ class HairShopCatalog {
                     return;
                 }
             }
+            this.saveCart();
             this.updateCartCount();
             this.updateProductCard(productId);
             
@@ -1193,6 +1332,7 @@ class HairShopCatalog {
         if (itemIndex > -1) {
             const item = this.cart[itemIndex];
             this.cart.splice(itemIndex, 1);
+            this.saveCart();
             this.updateCartCount();
             this.updateProductCard(productId);
             if (document.getElementById('cartScreen').classList.contains('active')) {
@@ -1239,10 +1379,12 @@ class HairShopCatalog {
             if (existingIndex > -1) {
                 // Удаляем из избранного
                 this.favorites.splice(existingIndex, 1);
+                this.saveFavorites();
                 this.showNotification(`Товар "${product.name}" удален из избранного`);
             } else {
                 // Добавляем в избранное
                 this.favorites.push(product);
+                this.saveFavorites();
                 this.showNotification(`Товар "${product.name}" добавлен в избранное!`);
             }
             
