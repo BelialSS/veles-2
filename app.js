@@ -1,7 +1,8 @@
 class HairShopCatalog {
     constructor() {
-        // !! ИСПОЛЬЗУЕМ CORS-ПРОКСИ С ПРЯМОЙ ОПУБЛИКОВАННОЙ CSV-ССЫЛКОЙ
-        this.CSV_URL = "https://corsproxy.io/?https://docs.google.com/spreadsheets/d/e/2PACX-1vS800Y_zN10Ys9uQfkEB67ZqlWMobbZTAkIu4l4X-a2rp1e80jlrFfhQV1m18n5hHCBANXc7VjRhIo5/pub?output=csv";
+        // URL Google Таблицы для экспорта в CSV. 
+        // Важно: Таблица должна быть опубликована в Интернете (Файл -> Поделиться -> Опубликовать).
+        this.CSV_URL = "https://docs.google.com/spreadsheets/d/15KZ6DHJD4zin2nATxLG-xBGx-BClYWUDAY_mW0VIwoM/export?format=csv&gid=0";
         
         this.products = [];
         this.filterRanges = null; 
