@@ -33,6 +33,7 @@ class HairShopCatalog {
             this.renderLoading();
             await this.loadProductsFromCSV();
             this.setupEventListeners();
+            this.setupNavigationListeners();
             this.updateCartCount();
             this.updateFavoritesCount();
             console.log('✅ Catalog ready for Telegram WebApp');
@@ -106,7 +107,6 @@ class HairShopCatalog {
             this.updateRangeValues();
             this.updateRangeSliders();
             this.renderProducts(this.products);
-            this.setupNavigationListeners();
             
         } catch (error) {
             console.error('❌ Ошибка загрузки или парсинга CSV:', error);
@@ -568,13 +568,15 @@ class HairShopCatalog {
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+        const activeBtn = document.querySelector(`[data-tab="${tab}"]`);
+        if (activeBtn) activeBtn.classList.add('active');
 
         // Обновляем активные панели
         document.querySelectorAll('.tab-pane').forEach(pane => {
             pane.classList.remove('active');
         });
-        document.getElementById(`${tab}Tab`).classList.add('active');
+        const activePane = document.getElementById(`${tab}Tab`);
+        if (activePane) activePane.classList.add('active');
 
         if (tab === 'favorites') {
             this.renderProfileFavorites();
@@ -588,6 +590,7 @@ class HairShopCatalog {
      */
     renderFavorites() {
         const favoritesContainer = document.getElementById('favoritesContainer');
+        if (!favoritesContainer) return;
         
         if (this.favorites.length === 0) {
             favoritesContainer.innerHTML = '<div class="empty-state">❤️ В избранном пока ничего нет</div>';
@@ -621,12 +624,12 @@ class HairShopCatalog {
                 }
             }
 
-            if (this.telegramUser.photo_url) {
+            if (profilePhoto && this.telegramUser.photo_url) {
                 profilePhoto.src = this.telegramUser.photo_url;
                 profilePhoto.style.display = 'block';
-                profileInitials.style.display = 'none';
-            } else {
-                profilePhoto.style.display = 'none';
+                if (profileInitials) profileInitials.style.display = 'none';
+            } else if (profileInitials) {
+                if (profilePhoto) profilePhoto.style.display = 'none';
                 profileInitials.style.display = 'flex';
                 profileInitials.textContent = userInitials;
             }
@@ -653,6 +656,7 @@ class HairShopCatalog {
      */
     renderProfileFavorites() {
         const profileFavorites = document.getElementById('profileFavorites');
+        if (!profileFavorites) return;
         
         if (this.favorites.length === 0) {
             profileFavorites.innerHTML = '<div class="empty-state">❤️ В избранном пока ничего нет</div>';
@@ -667,6 +671,7 @@ class HairShopCatalog {
      */
     renderPurchases() {
         const purchasesList = document.getElementById('purchasesTab');
+        if (!purchasesList) return;
         
         if (this.purchases.length === 0) {
             purchasesList.innerHTML = '<div class="empty-state">📦 У вас пока нет покупок</div>';
@@ -756,6 +761,8 @@ class HairShopCatalog {
         const cartContainer = document.getElementById('cartContainer');
         const cartTotal = document.getElementById('cartTotal');
         
+        if (!cartContainer) return;
+
         if (this.cart.length === 0) {
             cartContainer.innerHTML = '<div class="empty-state">🛒 Корзина пуста</div>';
             if (cartTotal) cartTotal.textContent = '0 ₽';
