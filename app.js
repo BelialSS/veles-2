@@ -112,6 +112,182 @@ class HairShopCatalog {
     }
 
     /**
+     * Определяет минимальные и максимальные значения для фильтров.
+     */
+    initializeFilterRanges() {
+        if (this.products.length === 0) return;
+
+        const allLengths = this.products.map(p => p.length).filter(l => l > 0);
+        const allPrices = this.products.map(p => p.price).filter(p => p > 0);
+        const allColors = [...new Set(this.products.map(p => p.color).filter(c => c && c.trim() !== ''))];
+
+        // Автоматическое определение диапазонов из данных
+        const minLength = allLengths.length > 0 ? Math.floor(Math.min(...allLengths)) : 10;
+        const maxLength = allLengths.length > 0 ? Math.ceil(Math.max(...allLengths)) : 50;
+        const minPrice = allPrices.length > 0 ? Math.floor(Math.min(...allPrices) / 100) * 100 : 1000;
+        const maxPrice = allPrices.length > 0 ? Math.ceil(Math.max(...allPrices) / 100) * 100 : 10000;
+
+        this.filterRanges = {
+            length: { min: minLength, max: maxLength },
+            price: { min: minPrice, max: maxPrice }
+        };
+
+        // Обновляем фильтры и элементы управления с новыми диапазонами
+        this.filters = {
+            minLength: minLength,
+            maxLength: maxLength,
+            minPrice: minPrice,
+            maxPrice: maxPrice,
+            colors: []
+        };
+        
+        this.updateFilterUI(allColors);
+    }
+
+    /**
+     * Загрузка и парсинг данных из Google Таблицы в формате CSV.
+     */
+    async loadProductsFromCSV() {
+        try {
+            console.log('📥 Loading products from CSV...');
+            const response = await fetch(this.CSV_URL);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const csvText = await response.text();
+            this.products = this.parseCSV(csvText);
+
+            // Инициализация диапазонов фильтров на основе загруженных данных
+            this.initializeFilterRanges();
+
+            this.renderProducts(this.products);
+            console.log(`✅ ${this.products.length} товаров загружено!`);
+        } catch (error) {
+            console.error("❌ Ошибка загрузки данных:", error);
+            const container = document.getElementById('productsContainer');
+            if (container) {
+                container.innerHTML = `<div style="text-align: center; color: #ffc400; padding: 50px;">
+                    Ошибка загрузки данных. Проверьте URL CSV и настройки доступа: ${error.message}
+                </div>`;
+            }
+        }
+    }
+
+    /**
+     * Парсит CSV-текст в массив объектов (товаров).
+     */
+    parseCSV(csvText) {
+        const lines = csvText.split('\n').filter(line => line.trim() !== '');
+        if (lines.length < 2) return [];
+
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
+        console.log('Обнаруженные заголовки:', headers);
+        const products = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            const values = this.parseCSVLine(lines[i]);
+            if (!values) continue;
+
+            const product = {};
+            headers.forEach((header, index) => {
+                let value = values[index] ? values[index].trim().replace(/"/g, '') : '';
+                
+                // Приведение типов для числовых полей
+                if (header === 'id' || header === 'price' || header === 'oldprice' || header === 'length') {
+                    value = parseFloat(value) || 0;
+                }
+                
+                product[header] = value;
+            });
+
+            products.push({
+                id: product.id || i,
+                name: product.name || 'Без названия',
+                price: product.price || 0,
+                oldPrice: product.oldprice || 0,
+                length: product.length || 0,
+                color: product.color || 'Не указан',
+                imageUrl: product.imageurl || ''
+            });
+        }
+        return products;
+    }
+
+    /**
+     * Парсит строку CSV, учитывая кавычки
+     */
+    parseCSVLine(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                result.push(current);
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        
+        result.push(current);
+        return result;
+    }
+
+    /**
+     * Обновляет интерфейс фильтров (ползунки, метки, список цветов)
+     */
+    updateFilterUI(colors) {
+        const lengthMinInput = document.getElementById('lengthMin');
+        const lengthMaxInput = document.getElementById('lengthMax');
+        const priceMinInput = document.getElementById('priceMin');
+        const priceMaxInput = document.getElementById('priceMax');
+        const colorSelect = document.getElementById('colorFilter');
+
+        if (!this.filterRanges) return;
+
+        // Длина
+        if (lengthMinInput && lengthMaxInput) {
+            lengthMinInput.min = this.filterRanges.length.min;
+            lengthMinInput.max = this.filterRanges.length.max;
+            lengthMaxInput.min = this.filterRanges.length.min;
+            lengthMaxInput.max = this.filterRanges.length.max;
+            
+            lengthMinInput.value = this.filters.minLength;
+            lengthMaxInput.value = this.filters.maxLength;
+        }
+
+        // Цена
+        if (priceMinInput && priceMaxInput) {
+            priceMinInput.min = this.filterRanges.price.min;
+            priceMinInput.max = this.filterRanges.price.max;
+            priceMaxInput.min = this.filterRanges.price.min;
+            priceMaxInput.max = this.filterRanges.price.max;
+            
+            priceMinInput.value = this.filters.minPrice;
+            priceMaxInput.value = this.filters.maxPrice;
+        }
+
+        // Обновляем метки диапазонов
+        this.updateRangeLabels();
+
+        // Цвета
+        if (colorSelect) {
+            colorSelect.innerHTML = '<option value="">Все цвета</option>';
+            colors.forEach(color => {
+                const option = document.createElement('option');
+                option.value = color;
+                option.textContent = color;
+                colorSelect.appendChild(option);
+            });
+        }
+    }
+
+    /**
      * Настройка обработчиков событий
      */
     setupEventListeners() {
@@ -324,181 +500,6 @@ class HairShopCatalog {
                 input.addEventListener('input', () => this.updateRangeLabels());
             }
         });
-    }
-
-    /**
-     * Загрузка и парсинг данных из Google Таблицы в формате CSV.
-     */
-    async loadProductsFromCSV() {
-        try {
-            console.log('📥 Loading products from CSV...');
-            const response = await fetch(this.CSV_URL);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const csvText = await response.text();
-            this.products = this.parseCSV(csvText);
-
-            // Инициализация диапазонов фильтров на основе загруженных данных
-            this.initializeFilterRanges();
-
-            this.renderProducts(this.products);
-            console.log(`✅ ${this.products.length} товаров загружено!`);
-        } catch (error) {
-            console.error("❌ Ошибка загрузки данных:", error);
-            const container = document.getElementById('productsContainer');
-            if (container) {
-                container.innerHTML = `<div style="text-align: center; color: #ffc400; padding: 50px;">
-                    Ошибка загрузки данных. Проверьте URL CSV и настройки доступа: ${error.message}
-                </div>`;
-            }
-        }
-    }
-
-    /**
-     * Парсит CSV-текст в массив объектов (товаров).
-     */
-    parseCSV(csvText) {
-        const lines = csvText.split('\n').filter(line => line.trim() !== '');
-        if (lines.length < 2) return [];
-
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
-        const products = [];
-
-        for (let i = 1; i < lines.length; i++) {
-            const values = this.parseCSVLine(lines[i]);
-            if (!values) continue;
-
-            const product = {};
-            headers.forEach((header, index) => {
-                let value = values[index] ? values[index].trim().replace(/"/g, '') : '';
-                
-                // Приведение типов для числовых полей
-                if (header === 'id' || header === 'price' || header === 'oldprice' || header === 'length') {
-                    value = parseFloat(value) || 0;
-                }
-                
-                product[header] = value;
-            });
-
-            products.push({
-                id: product.id || i,
-                name: product.name || 'Без названия',
-                price: product.price || 0,
-                oldPrice: product.oldprice || 0,
-                length: product.length || 0,
-                color: product.color || 'Не указан',
-                imageUrl: product.imageurl || ''
-            });
-        }
-        return products;
-    }
-
-    /**
-     * Парсит строку CSV, учитывая кавычки
-     */
-    parseCSVLine(line) {
-        const result = [];
-        let current = '';
-        let inQuotes = false;
-        
-        for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            
-            if (char === '"') {
-                inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
-                result.push(current);
-                current = '';
-            } else {
-                current += char;
-            }
-        }
-        
-        result.push(current);
-        return result;
-    }
-
-    /**
-     * Определяет минимальные и максимальные значения для фильтров.
-     */
-    initializeFilterRanges() {
-        if (this.products.length === 0) return;
-
-        const allLengths = this.products.map(p => p.length).filter(l => l > 0);
-        const allPrices = this.products.map(p => p.price).filter(p => p > 0);
-        const allColors = [...new Set(this.products.map(p => p.color).filter(c => c && c.trim() !== ''))];
-
-        // Автоматическое определение диапазонов из данных
-        const minLength = allLengths.length > 0 ? Math.floor(Math.min(...allLengths)) : 10;
-        const maxLength = allLengths.length > 0 ? Math.ceil(Math.max(...allLengths)) : 50;
-        const minPrice = allPrices.length > 0 ? Math.floor(Math.min(...allPrices) / 100) * 100 : 1000;
-        const maxPrice = allPrices.length > 0 ? Math.ceil(Math.max(...allPrices) / 100) * 100 : 10000;
-
-        this.filterRanges = {
-            length: { min: minLength, max: maxLength },
-            price: { min: minPrice, max: maxPrice }
-        };
-
-        // Обновляем фильтры и элементы управления с новыми диапазонами
-        this.filters = {
-            minLength: minLength,
-            maxLength: maxLength,
-            minPrice: minPrice,
-            maxPrice: maxPrice,
-            colors: []
-        };
-        
-        this.updateFilterUI(allColors);
-    }
-
-    /**
-     * Обновляет интерфейс фильтров (ползунки, метки, список цветов)
-     */
-    updateFilterUI(colors) {
-        const lengthMinInput = document.getElementById('lengthMin');
-        const lengthMaxInput = document.getElementById('lengthMax');
-        const priceMinInput = document.getElementById('priceMin');
-        const priceMaxInput = document.getElementById('priceMax');
-        const colorSelect = document.getElementById('colorFilter');
-
-        if (!this.filterRanges) return;
-
-        // Длина
-        if (lengthMinInput && lengthMaxInput) {
-            lengthMinInput.min = this.filterRanges.length.min;
-            lengthMinInput.max = this.filterRanges.length.max;
-            lengthMaxInput.min = this.filterRanges.length.min;
-            lengthMaxInput.max = this.filterRanges.length.max;
-            
-            lengthMinInput.value = this.filters.minLength;
-            lengthMaxInput.value = this.filters.maxLength;
-        }
-
-        // Цена
-        if (priceMinInput && priceMaxInput) {
-            priceMinInput.min = this.filterRanges.price.min;
-            priceMinInput.max = this.filterRanges.price.max;
-            priceMaxInput.min = this.filterRanges.price.min;
-            priceMaxInput.max = this.filterRanges.price.max;
-            
-            priceMinInput.value = this.filters.minPrice;
-            priceMaxInput.value = this.filters.maxPrice;
-        }
-
-        // Обновляем метки диапазонов
-        this.updateRangeLabels();
-
-        // Цвета
-        if (colorSelect) {
-            colorSelect.innerHTML = '<option value="">Все цвета</option>';
-            colors.forEach(color => {
-                const option = document.createElement('option');
-                option.value = color;
-                option.textContent = color;
-                colorSelect.appendChild(option);
-            });
-        }
     }
 
     /**
@@ -937,7 +938,7 @@ class HairShopCatalog {
                        `👤 Покупатель: ${this.telegramUser?.first_name || 'Неизвестно'}\n` +
                        `🚚 Способ получения: ${this.deliveryMethod === 'delivery' ? 'Доставка' : 'Самовывоз'}\n` +
                        `${deliveryInfo}\n` +
-                       `💳 Способ оплаты: ${paymentMethods[this.paymentMethod]}\n\n` +
+                       `💳 Способ оплата: ${paymentMethods[this.paymentMethod]}\n\n` +
                        `📦 Товары:\n${orderDetails}\n\n` +
                        `💎 Итого: ${total.toLocaleString()} ₽\n\n` +
                        `🕐 Время: ${new Date().toLocaleString()}`;
