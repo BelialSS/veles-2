@@ -1,4 +1,3 @@
-
 /**
  * Класс HairShopCatalog управляет загрузкой данных, фильтрацией и отображением товаров.
  */
@@ -304,44 +303,44 @@ class HairShopCatalog {
      * Парсит CSV-текст в массив объектов (товаров).
      */
     parseCSV(csvText) {
-    const lines = csvText.split('\n').filter(line => line.trim() !== '');
-    if (lines.length < 2) return [];
+        const lines = csvText.split('\n').filter(line => line.trim() !== '');
+        if (lines.length < 2) return [];
 
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
-    console.log('Обнаруженные заголовки:', headers);
-    const products = [];
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
+        console.log('Обнаруженные заголовки:', headers);
+        const products = [];
 
-    for (let i = 1; i < lines.length; i++) {
-        const values = this.parseCSVLine(lines[i]);
-        if (!values) continue;
+        for (let i = 1; i < lines.length; i++) {
+            const values = this.parseCSVLine(lines[i]);
+            if (!values) continue;
 
-        const product = {};
-        headers.forEach((header, index) => {
-            let value = values[index] ? values[index].trim().replace(/"/g, '') : '';
+            const product = {};
+            headers.forEach((header, index) => {
+                let value = values[index] ? values[index].trim().replace(/"/g, '') : '';
+                
+                // Приведение типов для числовых полей
+                if (header === 'id' || header === 'price' || header === 'oldprice' || header === 'length') {
+                    value = parseFloat(value) || 0;
+                }
+                
+                product[header] = value;
+            });
+
+            // Правильно извлекаем URL изображения
+            let imageUrl = product.imageurl || product.image || '';
             
-            // Приведение типов для числовых полей
-            if (header === 'id' || header === 'price' || header === 'oldprice' || header === 'length') {
-                value = parseFloat(value) || 0;
-            }
-            
-            product[header] = value;
-        });
-
-        // Правильно извлекаем URL изображения
-        let imageUrl = product.imageurl || product.image || '';
-        
-        products.push({
-            id: product.id || i,
-            name: product.name || 'Без названия',
-            price: product.price || 0,
-            oldPrice: product.oldprice || 0,
-            length: product.length || 0,
-            color: product.color || 'Не указан',
-            imageUrl: imageUrl
-        });
+            products.push({
+                id: product.id || i,
+                name: product.name || 'Без названия',
+                price: product.price || 0,
+                oldPrice: product.oldprice || 0,
+                length: product.length || 0,
+                color: product.color || 'Не указан',
+                imageUrl: imageUrl
+            });
+        }
+        return products;
     }
-    return products;
-}
 
     /**
      * Парсит строку CSV, учитывая кавычки
@@ -742,64 +741,73 @@ class HairShopCatalog {
     /**
      * Создает HTML-разметку для одной карточки товара.
      */
-   createProductCard(product) {
-    const hasDiscount = product.oldPrice && product.oldPrice > product.price;
-    const priceDisplay = hasDiscount 
-        ? `<span class="product-price">${product.price.toLocaleString()} ₽</span>
-           <span class="product-old-price">${product.oldPrice.toLocaleString()} ₽</span>`
-        : `<span class="product-price">${product.price.toLocaleString()} ₽</span>`;
+    createProductCard(product) {
+        const hasDiscount = product.oldPrice && product.oldPrice > product.price;
+        const priceDisplay = hasDiscount 
+            ? `<span class="product-price">${product.price.toLocaleString()} ₽</span>
+               <span class="product-old-price">${product.oldPrice.toLocaleString()} ₽</span>`
+            : `<span class="product-price">${product.price.toLocaleString()} ₽</span>`;
 
-    const isInCart = this.cart.some(item => item.id == product.id);
-    const cartItem = this.cart.find(item => item.id == product.id);
-    const quantity = cartItem ? cartItem.quantity : 0;
-    const isFavorite = this.favorites.some(item => item.id == product.id);
+        const isInCart = this.cart.some(item => item.id == product.id);
+        const cartItem = this.cart.find(item => item.id == product.id);
+        const quantity = cartItem ? cartItem.quantity : 0;
+        const isFavorite = this.favorites.some(item => item.id == product.id);
 
-    // Проверяем и корректируем URL изображения
-    let imageUrl = product.imageUrl || '';
-    
-    // Если URL относительный или неправильный, попробуем исправить
-    if (imageUrl && !imageUrl.startsWith('http')) {
-        // Если это просто имя файла, добавим базовый путь
-        imageUrl = `https://drive.google.com/uc?export=view&id=${imageUrl}`;
-    }
+        // Обработка изображения
+        let imageUrl = product.imageUrl || '';
+        let imageHtml = '';
 
-    return `
-        <div class="product-card" data-id="${product.id}">
-            <div class="product-image">
-                ${imageUrl ? `
-                    <img src="${imageUrl}" alt="${product.name}" 
-                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                         onload="this.style.display='block'; this.nextElementSibling.style.display='none';">
-                ` : ''}
-                <div class="image-placeholder" style="display: ${imageUrl ? 'none' : 'flex'};">
-                    📷
-                </div>
-                <button class="favorite-btn ${isFavorite ? 'active' : ''}" data-id="${product.id}">
-                    ${isFavorite ? '❤️' : '🤍'}
-                </button>
-            </div>
-            <div class="product-info">
-                <h3>${product.name}</h3>
-                <div class="product-meta">
-                    <span>Длина: ${product.length} см</span>
-                    <span>Цвет: ${product.color}</span>
-                </div>
-                ${priceDisplay}
-                ${isInCart ? `
-                    <div class="catalog-quantity-controls">
-                        <button class="catalog-quantity-btn decrease-btn" data-id="${product.id}">-</button>
-                        <span class="catalog-quantity">${quantity}</span>
-                        <button class="catalog-quantity-btn increase-btn" data-id="${product.id}">+</button>
+        if (imageUrl && imageUrl.trim() !== '') {
+            // Для Яндекс картинок используем прокси
+            if (imageUrl.includes('avatars.mds.yandex.net')) {
+                const imageId = imageUrl.match(/i\?id=([^&]+)/)?.[1];
+                if (imageId) {
+                    imageUrl = `https://images.weserv.nl/?url=avatars.mds.yandex.net/i?id=${imageId}&n=13&w=300&h=300&fit=cover`;
+                }
+            }
+
+            // Пробуем загрузить изображение и обрабатываем ошибки
+            imageHtml = `
+                <img src="${imageUrl}" alt="${product.name}" 
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                     onload="this.style.display='block'; this.nextElementSibling.style.display='none';"
+                     crossorigin="anonymous">
+            `;
+        }
+
+        return `
+            <div class="product-card" data-id="${product.id}">
+                <div class="product-image">
+                    ${imageHtml}
+                    <div class="image-placeholder" style="display: ${imageUrl ? 'flex' : 'flex'};">
+                        ${product.name.charAt(0).toUpperCase()}
                     </div>
-                ` : `
-                    <button class="btn-primary add-to-cart" data-id="${product.id}">
-                        Добавить в корзину
+                    <button class="favorite-btn ${isFavorite ? 'active' : ''}" data-id="${product.id}">
+                        ${isFavorite ? '❤️' : '🤍'}
                     </button>
-                `}
+                </div>
+                <div class="product-info">
+                    <h3>${product.name}</h3>
+                    <div class="product-meta">
+                        <span>Длина: ${product.length} см</span>
+                        <span>Цвет: ${product.color}</span>
+                    </div>
+                    ${priceDisplay}
+                    ${isInCart ? `
+                        <div class="catalog-quantity-controls">
+                            <button class="catalog-quantity-btn decrease-btn" data-id="${product.id}">-</button>
+                            <span class="catalog-quantity">${quantity}</span>
+                            <button class="catalog-quantity-btn increase-btn" data-id="${product.id}">+</button>
+                        </div>
+                    ` : `
+                        <button class="btn-primary add-to-cart" data-id="${product.id}">
+                            Добавить в корзину
+                        </button>
+                    `}
+                </div>
             </div>
-        </div>
-    `;
-}
+        `;
+    }
 
     /**
      * Применяет текущие фильтры к списку товаров и обновляет отображение.
