@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -84,6 +85,76 @@
                     <!-- Товары будут загружены сюда -->
                 </div>
             </main>
+        </div>
+    </div>
+
+    <!-- Экран избранного -->
+    <div id="favoritesScreen" class="screen">
+        <header class="main-header">
+            <div class="header-top">
+                <div class="header-left">
+                    <button id="backFromFavorites" class="header-icon-btn">
+                        ←
+                    </button>
+                </div>
+                <h1>❤️ Избранное</h1>
+                <div class="header-right">
+                    <div class="header-placeholder"></div>
+                </div>
+            </div>
+        </header>
+        <div class="favorites-content">
+            <div id="favoritesContainer" class="products-container">
+                <!-- Избранные товары будут здесь -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Экран профиля -->
+    <div id="profileScreen" class="screen">
+        <header class="main-header">
+            <div class="header-top">
+                <div class="header-left">
+                    <button id="backFromProfile" class="header-icon-btn">
+                        ←
+                    </button>
+                </div>
+                <h1>👤 Профиль</h1>
+                <div class="header-right">
+                    <div class="header-placeholder"></div>
+                </div>
+            </div>
+        </header>
+        <div class="profile-content">
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <img id="profilePhoto" src="" alt="Фото профиля" style="display: none;">
+                    <div id="profileInitials" class="profile-initials"></div>
+                </div>
+                <div class="profile-info">
+                    <h2 id="profileName">Пользователь</h2>
+                    <a id="profileUsername" href="#" class="profile-username"></a>
+                </div>
+            </div>
+
+            <div class="profile-tabs">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-tab="favorites">❤️ Избранное</button>
+                    <button class="tab-btn" data-tab="purchases">📦 Покупки</button>
+                </div>
+                
+                <div class="tab-content">
+                    <div id="favoritesTab" class="tab-pane active">
+                        <div id="profileFavorites" class="products-container">
+                            <!-- Избранные товары в профиле -->
+                        </div>
+                    </div>
+                    
+                    <div id="purchasesTab" class="tab-pane">
+                        <!-- История покупок будет здесь -->
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

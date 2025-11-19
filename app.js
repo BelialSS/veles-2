@@ -304,41 +304,44 @@ class HairShopCatalog {
      * Парсит CSV-текст в массив объектов (товаров).
      */
     parseCSV(csvText) {
-        const lines = csvText.split('\n').filter(line => line.trim() !== '');
-        if (lines.length < 2) return [];
+    const lines = csvText.split('\n').filter(line => line.trim() !== '');
+    if (lines.length < 2) return [];
 
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
-        console.log('Обнаруженные заголовки:', headers);
-        const products = [];
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
+    console.log('Обнаруженные заголовки:', headers);
+    const products = [];
 
-        for (let i = 1; i < lines.length; i++) {
-            const values = this.parseCSVLine(lines[i]);
-            if (!values) continue;
+    for (let i = 1; i < lines.length; i++) {
+        const values = this.parseCSVLine(lines[i]);
+        if (!values) continue;
 
-            const product = {};
-            headers.forEach((header, index) => {
-                let value = values[index] ? values[index].trim().replace(/"/g, '') : '';
-                
-                // Приведение типов для числовых полей
-                if (header === 'id' || header === 'price' || header === 'oldprice' || header === 'length') {
-                    value = parseFloat(value) || 0;
-                }
-                
-                product[header] = value;
-            });
+        const product = {};
+        headers.forEach((header, index) => {
+            let value = values[index] ? values[index].trim().replace(/"/g, '') : '';
+            
+            // Приведение типов для числовых полей
+            if (header === 'id' || header === 'price' || header === 'oldprice' || header === 'length') {
+                value = parseFloat(value) || 0;
+            }
+            
+            product[header] = value;
+        });
 
-            products.push({
-                id: product.id || i,
-                name: product.name || 'Без названия',
-                price: product.price || 0,
-                oldPrice: product.oldprice || 0,
-                length: product.length || 0,
-                color: product.color || 'Не указан',
-                imageUrl: product.imageurl || ''
-            });
-        }
-        return products;
+        // Правильно извлекаем URL изображения
+        let imageUrl = product.imageurl || product.image || '';
+        
+        products.push({
+            id: product.id || i,
+            name: product.name || 'Без названия',
+            price: product.price || 0,
+            oldPrice: product.oldprice || 0,
+            length: product.length || 0,
+            color: product.color || 'Не указан',
+            imageUrl: imageUrl
+        });
     }
+    return products;
+}
 
     /**
      * Парсит строку CSV, учитывая кавычки
@@ -751,24 +754,26 @@ class HairShopCatalog {
     const quantity = cartItem ? cartItem.quantity : 0;
     const isFavorite = this.favorites.some(item => item.id == product.id);
 
-    // Генерация цвета для заглушки
-    const colorHue = (product.id * 137) % 360;
-    const placeholderStyle = `background: linear-gradient(135deg, hsl(${colorHue}, 70%, 60%), hsl(${colorHue}, 70%, 40%));`;
+    // Проверяем и корректируем URL изображения
+    let imageUrl = product.imageUrl || '';
+    
+    // Если URL относительный или неправильный, попробуем исправить
+    if (imageUrl && !imageUrl.startsWith('http')) {
+        // Если это просто имя файла, добавим базовый путь
+        imageUrl = `https://drive.google.com/uc?export=view&id=${imageUrl}`;
+    }
 
     return `
         <div class="product-card" data-id="${product.id}">
             <div class="product-image">
-                ${product.imageUrl && product.imageUrl.trim() !== '' ? 
-                    `<img src="${product.imageUrl}" alt="${product.name}" 
+                ${imageUrl ? `
+                    <img src="${imageUrl}" alt="${product.name}" 
                          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
                          onload="this.style.display='block'; this.nextElementSibling.style.display='none';">
-                     <div class="image-placeholder" style="${placeholderStyle}">
-                         ${product.name.charAt(0).toUpperCase()}
-                     </div>` :
-                    `<div class="image-placeholder" style="${placeholderStyle}">
-                         ${product.name.charAt(0).toUpperCase()}
-                     </div>`
-                }
+                ` : ''}
+                <div class="image-placeholder" style="display: ${imageUrl ? 'none' : 'flex'};">
+                    📷
+                </div>
                 <button class="favorite-btn ${isFavorite ? 'active' : ''}" data-id="${product.id}">
                     ${isFavorite ? '❤️' : '🤍'}
                 </button>
