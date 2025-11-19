@@ -739,55 +739,62 @@ class HairShopCatalog {
     /**
      * Создает HTML-разметку для одной карточки товара.
      */
-    createProductCard(product) {
-        const hasDiscount = product.oldPrice && product.oldPrice > product.price;
-        const priceDisplay = hasDiscount 
-            ? `<span class="product-price">${product.price.toLocaleString()} ₽</span>
-               <span class="product-old-price">${product.oldPrice.toLocaleString()} ₽</span>`
-            : `<span class="product-price">${product.price.toLocaleString()} ₽</span>`;
+   createProductCard(product) {
+    const hasDiscount = product.oldPrice && product.oldPrice > product.price;
+    const priceDisplay = hasDiscount 
+        ? `<span class="product-price">${product.price.toLocaleString()} ₽</span>
+           <span class="product-old-price">${product.oldPrice.toLocaleString()} ₽</span>`
+        : `<span class="product-price">${product.price.toLocaleString()} ₽</span>`;
 
-        const imageUrl = product.imageUrl && product.imageUrl.trim() !== '' ? product.imageUrl : '';
-        const imageClass = imageUrl === '' ? 'no-image' : '';
+    const isInCart = this.cart.some(item => item.id == product.id);
+    const cartItem = this.cart.find(item => item.id == product.id);
+    const quantity = cartItem ? cartItem.quantity : 0;
+    const isFavorite = this.favorites.some(item => item.id == product.id);
 
-        const isInCart = this.cart.some(item => item.id == product.id);
-        const cartItem = this.cart.find(item => item.id == product.id);
-        const quantity = cartItem ? cartItem.quantity : 0;
-        const isFavorite = this.favorites.some(item => item.id == product.id);
+    // Генерация цвета для заглушки
+    const colorHue = (product.id * 137) % 360;
+    const placeholderStyle = `background: linear-gradient(135deg, hsl(${colorHue}, 70%, 60%), hsl(${colorHue}, 70%, 40%));`;
 
-        // Упрощенная версия без изображений, вызывающих 404 ошибки
-        return `
-            <div class="product-card" data-id="${product.id}">
-                <div class="product-image ${imageClass}">
-                    <!-- Заглушка вместо изображения -->
-                    <div class="image-placeholder">
-                        ${product.name.charAt(0).toUpperCase()}
-                    </div>
-                    <button class="favorite-btn ${isFavorite ? 'active' : ''}" data-id="${product.id}">
-                        ${isFavorite ? '❤️' : '🤍'}
-                    </button>
-                </div>
-                <div class="product-info">
-                    <h3>${product.name}</h3>
-                    <div class="product-meta">
-                        <span>Длина: ${product.length} см</span>
-                        <span>Цвет: ${product.color}</span>
-                    </div>
-                    ${priceDisplay}
-                    ${isInCart ? `
-                        <div class="catalog-quantity-controls">
-                            <button class="catalog-quantity-btn decrease-btn" data-id="${product.id}">-</button>
-                            <span class="catalog-quantity">${quantity}</span>
-                            <button class="catalog-quantity-btn increase-btn" data-id="${product.id}">+</button>
-                        </div>
-                    ` : `
-                        <button class="btn-primary add-to-cart" data-id="${product.id}">
-                            Добавить в корзину
-                        </button>
-                    `}
-                </div>
+    return `
+        <div class="product-card" data-id="${product.id}">
+            <div class="product-image">
+                ${product.imageUrl && product.imageUrl.trim() !== '' ? 
+                    `<img src="${product.imageUrl}" alt="${product.name}" 
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                         onload="this.style.display='block'; this.nextElementSibling.style.display='none';">
+                     <div class="image-placeholder" style="${placeholderStyle}">
+                         ${product.name.charAt(0).toUpperCase()}
+                     </div>` :
+                    `<div class="image-placeholder" style="${placeholderStyle}">
+                         ${product.name.charAt(0).toUpperCase()}
+                     </div>`
+                }
+                <button class="favorite-btn ${isFavorite ? 'active' : ''}" data-id="${product.id}">
+                    ${isFavorite ? '❤️' : '🤍'}
+                </button>
             </div>
-        `;
-    }
+            <div class="product-info">
+                <h3>${product.name}</h3>
+                <div class="product-meta">
+                    <span>Длина: ${product.length} см</span>
+                    <span>Цвет: ${product.color}</span>
+                </div>
+                ${priceDisplay}
+                ${isInCart ? `
+                    <div class="catalog-quantity-controls">
+                        <button class="catalog-quantity-btn decrease-btn" data-id="${product.id}">-</button>
+                        <span class="catalog-quantity">${quantity}</span>
+                        <button class="catalog-quantity-btn increase-btn" data-id="${product.id}">+</button>
+                    </div>
+                ` : `
+                    <button class="btn-primary add-to-cart" data-id="${product.id}">
+                        Добавить в корзину
+                    </button>
+                `}
+            </div>
+        </div>
+    `;
+}
 
     /**
      * Применяет текущие фильтры к списку товаров и обновляет отображение.
