@@ -1,4 +1,3 @@
-
 /* Глобальные стили */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -183,20 +182,7 @@ body {
     box-shadow: 0 15px 30px rgba(255, 204, 0, 0.1);
 }
 
-/* Стили для заглушек изображений */
-.image-placeholder {
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 2rem;
-    font-weight: bold;
-    border-radius: 10px;
-}
-
+/* Стили для изображений товаров */
 .product-image {
     position: relative;
     width: 100%;
@@ -217,46 +203,16 @@ body {
 .image-placeholder {
     width: 100%;
     height: 100%;
-    background: #333;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #666;
-    font-size: 3rem;
+    color: white;
+    font-size: 2rem;
+    font-weight: bold;
+    border-radius: 10px;
 }
 
-/* Стили для маленьких изображений в корзине и заказах */
-.cart-item-image,
-.order-item-image {
-    width: 60px;
-    height: 60px;
-    border-radius: 8px;
-    margin-right: 15px;
-    flex-shrink: 0;
-    background: #333;
-    overflow: hidden;
-    position: relative;
-}
-
-.cart-item-image img,
-.order-item-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: none;
-}
-
-.cart-item-image .image-placeholder-small,
-.order-item-image .image-placeholder-small {
-    width: 100%;
-    height: 100%;
-    background: #333;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #666;
-    font-size: 1.2rem;
-}}
 /* Значок избранного на карточке */
 .favorite-btn {
     position: absolute;
@@ -406,10 +362,16 @@ body {
     border-radius: 8px;
     margin-right: 15px;
     flex-shrink: 0;
+    background: #1a1a1a;
+    overflow: hidden;
+    position: relative;
 }
 
 .cart-item-image img,
 .order-item-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
     display: none;
 }
 
